@@ -24,3 +24,11 @@ pub fn from_file(path: &Path) -> IoResult<GapBuffer> {
     // Pack the file and buffer into a new GapBuffer object.
     Ok(GapBuffer{ buffer: buffer, file: Some(file) })
 }
+
+#[test]
+fn from_file_loads_file_into_buffer() {
+    match from_file(&Path::new("tests/sample/file")) {
+        Ok(gap_buffer) => assert_eq!(gap_buffer.buffer, "it works!\n"),
+        Err(error) => panic!(error),
+    }
+}
