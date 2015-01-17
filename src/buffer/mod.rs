@@ -1,7 +1,21 @@
+use std::io::{File, Open, ReadWrite};
+
 mod gap_buffer;
 
 #[cfg(test)]
 mod tests;
+
+trait BufferData {
+  fn insert(&self, Position, String);
+  fn delete(&self, Range);
+}
+
+struct Buffer<T: BufferData> {
+    data: T,
+    file: File,
+    cursor: Position,
+    selection: Range,
+}
 
 struct Position {
     line:   u64,
