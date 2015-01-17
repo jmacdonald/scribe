@@ -1,5 +1,5 @@
-use super::position::Position;
-use super::range::Range;
+use super::Position;
+use super::Range;
 
 #[test]
 fn range_is_valid_when_start_is_before_end() {

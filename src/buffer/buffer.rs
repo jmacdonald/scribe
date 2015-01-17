@@ -1,9 +1,9 @@
 use std::io::{File, Open, ReadWrite};
 use std::io::IoResult;
-use super::position::Position;
-use super::range::Range;
+use super::Position;
+use super::Range;
 
-struct Buffer {
+pub struct Buffer {
     data: String,
     file: Option<File>,
     cursor: Position,

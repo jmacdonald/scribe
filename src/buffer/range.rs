@@ -1,4 +1,4 @@
-use super::position::Position;
+use super::Position;
 
 pub struct Range {
     pub start: Position,
