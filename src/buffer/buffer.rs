@@ -29,10 +29,15 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     Ok(Buffer{ data: data, file: Some(file), cursor: Position{ line: 0, offset: 0 }, selection: None })
 }
 
-#[test]
-fn from_file_loads_file_into_buffer() {
-    match from_file(&Path::new("tests/sample/file")) {
-        Ok(buffer) => assert_eq!(buffer.data, "it works!\n"),
-        Err(error) => panic!(error),
+#[cfg(test)]
+mod tests {
+    use super::from_file;
+    
+    #[test]
+    fn from_file_loads_file_into_buffer() {
+        match from_file(&Path::new("tests/sample/file")) {
+            Ok(buffer) => assert_eq!(buffer.data, "it works!\n"),
+            Err(error) => panic!(error),
+        }
     }
 }
