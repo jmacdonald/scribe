@@ -2,7 +2,7 @@ use super::Position;
 use super::Range;
 
 pub struct GapBuffer {
-    data: String,
+    data: Vec<u8>,
 }
 
 pub fn new(mut data: String) -> GapBuffer {
@@ -10,11 +10,11 @@ pub fn new(mut data: String) -> GapBuffer {
     let data_length = data.len();
     data.reserve(data_length * 2);
 
-    GapBuffer{ data: data }
+    GapBuffer{ data: data.into_bytes() }
 }
 
 impl GapBuffer {
     pub fn to_string(&self) -> String {
-        self.data.clone()
+        String::from_utf8(self.data.clone()).unwrap()
     }
 }
