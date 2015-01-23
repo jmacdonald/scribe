@@ -94,23 +94,35 @@ impl GapBuffer {
             }
         }
 
+        // We didn't find the position *within* the second half, but it could
+        // be right after it, which means it's at the end of the buffer.
+        if line == position.line && line_offset == position.offset {
+            return Some(self.data.len());
+        }
+
         None
     }
 
     fn move_gap(&mut self, offset: usize) {
         if offset < self.gap_start {
+            // Shift the gap to the left one byte at a time.
             for index in (offset..self.gap_start) {
                 self.data[index + self.gap_length] = self.data[index];
                 self.data[index] = 0;
             }
+
+            self.gap_start = offset;
         } else if offset > self.gap_start {
+            // Shift the gap to the right one byte at a time.
             for index in (self.gap_start+self.gap_length..offset) {
                 self.data[index-self.gap_length] = self.data[index];
                 self.data[index] = 0;
             }
+            
+            // Because the offset was after the gap, its value included the
+            // gap length. We must remove it to determine the starting point.
+            self.gap_start = offset - self.gap_length;
         }
-
-        self.gap_start = offset;
     }
 
     fn write_to_gap(&mut self, data: &str) {
@@ -146,5 +158,13 @@ mod tests {
         let mut gb = new("This is a test.".to_string());
         gb.insert(" Seriously.", &Position { line: 0, offset: 15 });
         assert_eq!(gb.to_string(), "This is a test. Seriously.");
+    }
+
+    #[test]
+    fn inserting_in_different_spots_twice_works() {
+        let mut gb = new("This is a test.".to_string());
+        gb.insert("Hi. ", &Position { line: 0, offset: 0 });
+        gb.insert(" Thank you.", &Position { line: 0, offset: 19 });
+        assert_eq!(gb.to_string(), "Hi. This is a test. Thank you.");
     }
 }
