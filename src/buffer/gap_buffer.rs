@@ -48,7 +48,7 @@ impl GapBuffer {
 
     // Maps a position to its offset equivalent in the data.
     fn find_offset(&self, position: &Position) -> Option<usize> {
-        let first_half = from_utf8(&self.data[0..self.gap_start]).unwrap();
+        let first_half = from_utf8(&self.data[..self.gap_start]).unwrap();
         let mut line = 0;
         let mut line_offset = 0;
 
@@ -67,6 +67,12 @@ impl GapBuffer {
             } else {
                 line_offset+=1;
             }
+        }
+
+        // We didn't find the position *within* the first half, but it could
+        // be right after it, which means it's right at the start of the gap.
+        if line == position.line && line_offset == position.offset {
+            return Some(self.gap_start);
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
@@ -126,5 +132,12 @@ mod tests {
         let mut gb = new("This is a test.\nPlease be gentle.".to_string());
         gb.insert(" very", &Position { line: 1, offset: 9 });
         assert_eq!(gb.to_string(), "This is a test.\nPlease be very gentle.");
+    }
+
+    #[test]
+    fn inserting_at_the_end_works() {
+        let mut gb = new("This is a test.".to_string());
+        gb.insert(" Seriously.", &Position { line: 0, offset: 15 });
+        assert_eq!(gb.to_string(), "This is a test. Seriously.");
     }
 }
