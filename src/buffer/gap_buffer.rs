@@ -105,9 +105,6 @@ impl GapBuffer {
         }
 
         self.gap_start = offset;
-        for byte in self.data.iter() {
-            println!("{}", byte);
-        }
     }
 
     fn write_to_gap(&mut self, data: &str) {
