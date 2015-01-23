@@ -128,7 +128,14 @@ mod tests {
     use super::super::Position;
 
     #[test]
-    fn insert_works() {
+    fn inserting_at_the_start_works() {
+        let mut gb = new("This is a test.".to_string());
+        gb.insert("Hi. ", &Position { line: 0, offset: 0 });
+        assert_eq!(gb.to_string(), "Hi. This is a test.");
+    }
+
+    #[test]
+    fn inserting_in_the_middle_works() {
         let mut gb = new("This is a test.\nPlease be gentle.".to_string());
         gb.insert(" very", &Position { line: 1, offset: 9 });
         assert_eq!(gb.to_string(), "This is a test.\nPlease be very gentle.");
