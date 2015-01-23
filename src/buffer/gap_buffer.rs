@@ -70,7 +70,7 @@ impl GapBuffer {
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
-        let second_half = from_utf8(&self.data[self.gap_start+self.gap_length..self.data.len()-1]).unwrap();
+        let second_half = from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap();
         for char_index in second_half.char_indices() {
             let (offset, character) = char_index;
 
