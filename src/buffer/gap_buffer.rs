@@ -104,6 +104,12 @@ impl GapBuffer {
     }
 
     fn move_gap(&mut self, offset: usize) {
+        // We don't need to move any data if the buffer is at capacity.
+        if self.gap_length == 0 {
+            self.gap_start = offset;
+            return;
+        }
+
         if offset < self.gap_start {
             // Shift the gap to the left one byte at a time.
             for index in (offset..self.gap_start) {
@@ -138,6 +144,13 @@ impl GapBuffer {
 mod tests {
     use super::*;
     use super::super::Position;
+
+    #[test]
+    fn move_gap_works() {
+        let mut gb = new("This is a test.".to_string());
+        gb.move_gap(0);
+        assert_eq!(gb.to_string(), "This is a test.");
+    }
 
     #[test]
     fn inserting_at_the_start_works() {
