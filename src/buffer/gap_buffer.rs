@@ -46,6 +46,20 @@ impl GapBuffer {
         from_utf8(&self.data[..self.gap_start]).unwrap().to_string() + from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap()
     }
 
+    pub fn remove(&mut self, range: &Range) {
+        let start_offset = match self.find_offset(&range.start) {
+            Some(o) => o,
+            None => return,
+        };
+        self.move_gap(start_offset);
+
+        let end_offset = match self.find_offset(&range.end) {
+            Some(o) => o,
+            None => return,
+        };
+        self.gap_length=end_offset-start_offset;
+    }
+
     // Maps a position to its offset equivalent in the data.
     fn find_offset(&self, position: &Position) -> Option<usize> {
         let first_half = from_utf8(&self.data[..self.gap_start]).unwrap();
@@ -144,6 +158,7 @@ impl GapBuffer {
 mod tests {
     use super::*;
     use super::super::Position;
+    use super::super::Range;
 
     #[test]
     fn move_gap_works() {
@@ -179,5 +194,14 @@ mod tests {
         gb.insert("Hi. ", &Position { line: 0, offset: 0 });
         gb.insert(" Thank you.", &Position { line: 0, offset: 19 });
         assert_eq!(gb.to_string(), "Hi. This is a test. Thank you.");
+    }
+
+    #[test]
+    fn removing_works() {
+        let mut gb = new("This is a test.\nSee what happens.".to_string());
+        let start = Position{ line: 0, offset: 8 };
+        let end = Position{ line: 1, offset: 4 };
+        gb.remove(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "This is what happens.");
     }
 }
