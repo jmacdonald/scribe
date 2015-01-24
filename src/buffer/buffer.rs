@@ -8,8 +8,6 @@ use super::Range;
 pub struct Buffer {
     data: GapBuffer,
     file: Option<File>,
-    cursor: Position,
-    selection: Option<Range>,
 }
 
 pub fn from_file(path: &Path) -> IoResult<Buffer> {
@@ -26,7 +24,7 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     let data = gap_buffer::new(data);
 
     // Create a new buffer using the loaded data, file, and other defaults.
-    Ok(Buffer{ data: data, file: Some(file), cursor: Position{ line: 0, offset: 0 }, selection: None })
+    Ok(Buffer{ data: data, file: Some(file) })
 }
 
 #[cfg(test)]
