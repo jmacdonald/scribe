@@ -1,5 +1,5 @@
-use std::io::{File, Open, ReadWrite};
-use std::io::IoResult;
+use std::old_io::{File, Open, ReadWrite};
+use std::old_io::IoResult;
 use super::GapBuffer;
 use super::gap_buffer;
 use super::Position;
