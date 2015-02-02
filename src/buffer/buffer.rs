@@ -10,6 +10,20 @@ pub struct Buffer {
     file: Option<File>,
 }
 
+impl Buffer {
+    pub fn data(&self) -> String {
+        self.data.to_string()
+    }
+}
+
+/// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
+///
+/// # Examples
+///
+/// ```rust
+/// 
+/// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
+/// assert_eq!(buffer.data(), "it works!\n");
 pub fn from_file(path: &Path) -> IoResult<Buffer> {
     // Try to open and read the file, returning any errors encountered.
     let mut file = match File::open_mode(path, Open, ReadWrite) {
@@ -25,17 +39,4 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
 
     // Create a new buffer using the loaded data, file, and other defaults.
     Ok(Buffer{ data: data, file: Some(file) })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::from_file;
-
-    #[test]
-    fn from_file_loads_file_into_buffer() {
-        match from_file(&Path::new("tests/sample/file")) {
-            Ok(buffer) => assert_eq!(buffer.data.to_string(), "it works!\n"),
-            Err(error) => panic!(error),
-        }
-    }
 }
