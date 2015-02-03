@@ -15,10 +15,10 @@ impl Buffer {
     ///
     /// # Examples
     ///
-    /// ```rust
-    ///
+    /// ```
     /// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
     /// assert_eq!(buffer.data(), "it works!\n");
+    /// ```
     pub fn data(&self) -> String {
         self.data.to_string()
     }
@@ -28,10 +28,10 @@ impl Buffer {
 ///
 /// # Examples
 ///
-/// ```rust
-/// 
+/// ```
 /// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
+/// ```
 pub fn from_file(path: &Path) -> IoResult<Buffer> {
     // Try to open and read the file, returning any errors encountered.
     let mut file = match File::open_mode(path, Open, ReadWrite) {
