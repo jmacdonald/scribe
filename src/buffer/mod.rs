@@ -1,3 +1,4 @@
+pub use self::buffer::new;
 pub use self::buffer::from_file;
 pub use self::buffer::Buffer;
 pub use self::gap_buffer::GapBuffer;

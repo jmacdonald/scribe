@@ -24,6 +24,17 @@ impl Buffer {
     }
 }
 
+/// Creates a new empty buffer.
+///
+/// # Examples
+///
+/// ```
+/// let buffer = scribe::buffer::new();
+/// ```
+pub fn new() -> Buffer {
+    Buffer{ data: gap_buffer::new(String::new()), file: None }
+}
+
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
 ///
 /// # Examples
