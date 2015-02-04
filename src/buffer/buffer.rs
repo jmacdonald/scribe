@@ -1,4 +1,4 @@
-use std::old_io::{File, Open, ReadWrite};
+use std::old_io::{File, Open, Read};
 use std::old_io::IoResult;
 use super::GapBuffer;
 use super::gap_buffer;
@@ -54,7 +54,7 @@ pub fn new() -> Buffer {
 /// ```
 pub fn from_file(path: &Path) -> IoResult<Buffer> {
     // Try to open and read the file, returning any errors encountered.
-    let mut file = match File::open_mode(path, Open, ReadWrite) {
+    let mut file = match File::open_mode(path, Open, Read) {
         Ok(f) => f,
         Err(error) => return Err(error),
     };
