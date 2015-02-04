@@ -7,7 +7,7 @@ use super::Range;
 
 pub struct Buffer {
     data: GapBuffer,
-    file: Option<File>,
+    path: Option<Path>,
     pub cursor: Position,
 }
 
@@ -38,7 +38,7 @@ pub fn new() -> Buffer {
     let data = gap_buffer::new(String::new());
     let cursor = Position{ line: 0, offset: 0 };
 
-    Buffer{ data: data, file: None, cursor: cursor }
+    Buffer{ data: data, path: None, cursor: cursor }
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
@@ -66,6 +66,6 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     let data = gap_buffer::new(data);
     let cursor = Position{ line: 0, offset: 0 };
 
-    // Create a new buffer using the loaded data, file, and other defaults.
-    Ok(Buffer{ data: data, file: Some(file), cursor: cursor })
+    // Create a new buffer using the loaded data, path, and other defaults.
+    Ok(Buffer{ data: data, path: Some(path.clone()), cursor: cursor })
 }
