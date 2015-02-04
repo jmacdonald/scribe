@@ -8,6 +8,7 @@ use super::Range;
 pub struct Buffer {
     data: GapBuffer,
     file: Option<File>,
+    pub cursor: Position,
 }
 
 impl Buffer {
@@ -24,24 +25,32 @@ impl Buffer {
     }
 }
 
-/// Creates a new empty buffer.
+/// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
 ///
 /// # Examples
 ///
 /// ```
 /// let buffer = scribe::buffer::new();
+/// # assert_eq!(buffer.cursor.line, 0);
+/// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
 pub fn new() -> Buffer {
-    Buffer{ data: gap_buffer::new(String::new()), file: None }
+    let data = gap_buffer::new(String::new());
+    let cursor = Position{ line: 0, offset: 0 };
+
+    Buffer{ data: data, file: None, cursor: cursor }
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
+/// The buffer's cursor is set to the beginning of the buffer.
 ///
 /// # Examples
 ///
 /// ```
 /// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
+/// # assert_eq!(buffer.cursor.line, 0);
+/// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
 pub fn from_file(path: &Path) -> IoResult<Buffer> {
     // Try to open and read the file, returning any errors encountered.
@@ -55,7 +64,8 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     };
 
     let data = gap_buffer::new(data);
+    let cursor = Position{ line: 0, offset: 0 };
 
     // Create a new buffer using the loaded data, file, and other defaults.
-    Ok(Buffer{ data: data, file: Some(file) })
+    Ok(Buffer{ data: data, file: Some(file), cursor: cursor })
 }
