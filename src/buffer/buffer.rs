@@ -23,6 +23,19 @@ impl Buffer {
     pub fn data(&self) -> String {
         self.data.to_string()
     }
+
+    /// Inserts `data` into the buffer at the cursor position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// assert_eq!(buffer.data(), "scribe");
+    /// ```
+    pub fn insert(&mut self, data: &str) {
+        self.data.insert(data, &self.cursor);
+    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
