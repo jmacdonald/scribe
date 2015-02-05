@@ -17,8 +17,9 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
-    /// assert_eq!(buffer.data(), "it works!\n");
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn data(&self) -> String {
         self.data.to_string()
