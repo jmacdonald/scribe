@@ -1,4 +1,5 @@
-use std::old_io::{File, Open, Read};
+use std::old_io::{File, Open, Read, Write};
+use std::old_io::IoError;
 use std::old_io::IoResult;
 use super::GapBuffer;
 use super::gap_buffer;
@@ -7,7 +8,7 @@ use super::Range;
 
 pub struct Buffer {
     data: GapBuffer,
-    path: Option<Path>,
+    pub path: Option<Path>,
     pub cursor: Position,
 }
 
@@ -23,6 +24,47 @@ impl Buffer {
     /// ```
     pub fn data(&self) -> String {
         self.data.to_string()
+    }
+
+    /// Writes the contents of the buffer to its path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::old_io::{File, Open, Read};
+    ///
+    /// // Set up a buffer and point it to a path.
+    /// let mut buffer = scribe::buffer::new();
+    /// let write_path = Path::new("my_doc");
+    /// buffer.path = Some(write_path.clone());
+    ///
+    /// // Put some data into the buffer and save it.
+    /// buffer.insert("scribe");
+    /// buffer.save();
+    ///
+    /// # let saved_data = File::open_mode(&write_path, Open, Read)
+    /// #   .unwrap().read_to_string().unwrap();
+    /// # assert_eq!(saved_data, "scribe");
+    ///
+    /// # std::old_io::fs::unlink(&write_path);
+    /// ```
+    pub fn save(&self) -> Option<IoError> {
+        let path = match self.path.clone() {
+            Some(p) => p,
+            None => Path::new(""),
+        };
+
+        // Try to open and write to the file, returning any errors encountered.
+        let mut file = match File::open_mode(&path, Open, Write) {
+            Ok(f) => f,
+            Err(error) => return Some(error),
+        };
+        match file.write(self.data().as_bytes()) {
+            Ok(_) => (),
+            Err(error) => return Some(error),
+        }
+
+        return None
     }
 
     /// Inserts `data` into the buffer at the cursor position.
