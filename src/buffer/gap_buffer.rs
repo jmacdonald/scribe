@@ -197,6 +197,13 @@ mod tests {
     }
 
     #[test]
+    fn inserting_at_an_invalid_position_does_nothing() {
+        let mut gb = new("This is a test.".to_string());
+        gb.insert(" Seriously.", &Position { line: 0, offset: 35 });
+        assert_eq!(gb.to_string(), "This is a test.");
+    }
+
+    #[test]
     fn removing_works() {
         let mut gb = new("This is a test.\nSee what happens.".to_string());
         let start = Position{ line: 0, offset: 8 };
