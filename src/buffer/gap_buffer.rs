@@ -2,12 +2,21 @@ use super::Position;
 use super::Range;
 use std::str::from_utf8;
 
+/// A UTF-8 string buffer designed to minimize reallocations,
+/// maintaining performance amid frequent modifications.
 pub struct GapBuffer {
     data: Vec<u8>,
     gap_start: usize,
     gap_length: usize,
 }
 
+/// Initializes a gap buffer with the specified data as its contents.
+///
+/// # Examples
+///
+/// let buffer = new("scribe".to_string());
+/// assert_eq!(buffer.to_string(), "scribe");
+///
 pub fn new(mut data: String) -> GapBuffer {
     let mut bytes = data.into_bytes();
     let capacity = bytes.capacity();
