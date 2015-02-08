@@ -99,6 +99,22 @@ impl GapBuffer {
         self.gap_length=end_offset-start_offset;
     }
 
+    /// Checks whether or not the specified position is in bounds of the buffer data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
+    /// let in_bounds = scribe::buffer::Position{ line: 0, offset: 0 };
+    /// let out_of_bounds = scribe::buffer::Position{ line: 1, offset: 3 };
+    /// 
+    /// assert_eq!(buffer.in_bounds(&in_bounds), true);
+    /// assert_eq!(buffer.in_bounds(&out_of_bounds), false);
+    /// ```
+    pub fn in_bounds(&self, position: &Position) -> bool {
+        self.find_offset(position) != None
+    }
+
     // Maps a position to its offset equivalent in the data.
     fn find_offset(&self, position: &Position) -> Option<usize> {
         let first_half = from_utf8(&self.data[..self.gap_start]).unwrap();
