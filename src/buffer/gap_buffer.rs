@@ -26,9 +26,9 @@ impl GapBuffer {
     ///
     /// # Examples
     ///
-    /// let mut b = new("my buffer data");
-    /// b.insert(" changed", Position{ line: 0, offset: 2});
-    /// assert_eq!("my changed buffer data", b.to_string());
+    /// let mut buffer = new("my buffer data");
+    /// buffer.insert(" changed", Position{ line: 0, offset: 2});
+    /// assert_eq!("my changed buffer data", buffer.to_string());
     /// 
     pub fn insert(&mut self, data: &str, position: &Position) {
         // Ensure we have the capacity to insert this data.
@@ -51,10 +51,27 @@ impl GapBuffer {
         self.write_to_gap(data);
     }
 
+    /// Returns a string representation of the buffer data (without gap).
+    ///
+    /// # Examples
+    ///
+    /// let mut buffer = new("my data");
+    /// assert_eq!(buffer.to_string(), "my data");
+    ///
     pub fn to_string(&self) -> String {
         from_utf8(&self.data[..self.gap_start]).unwrap().to_string() + from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap()
     }
 
+    /// Removes the specified range of data from the buffer.
+    ///
+    /// # Examples
+    ///
+    /// let mut buffer = new("my data");
+    /// let range = Range{ start: Position{ line: 0, offset: 0 },
+    ///   end: Position{ line: 0, offset: 3} };
+    /// buffer.remove(range)
+    /// assert_eq!(buffer.to_string(), "data");
+    ///
     pub fn remove(&mut self, range: &Range) {
         let start_offset = match self.find_offset(&range.start) {
             Some(o) => o,
