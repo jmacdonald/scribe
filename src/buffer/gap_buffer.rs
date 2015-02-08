@@ -14,9 +14,10 @@ pub struct GapBuffer {
 ///
 /// # Examples
 ///
-/// let buffer = new("scribe".to_string());
+/// ```
+/// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
 /// assert_eq!(buffer.to_string(), "scribe");
-///
+/// ```
 pub fn new(mut data: String) -> GapBuffer {
     let mut bytes = data.into_bytes();
     let capacity = bytes.capacity();
@@ -35,10 +36,11 @@ impl GapBuffer {
     ///
     /// # Examples
     ///
-    /// let mut buffer = new("my buffer data");
-    /// buffer.insert(" changed", Position{ line: 0, offset: 2});
+    /// ```
+    /// let mut buffer = scribe::buffer::gap_buffer::new("my buffer data".to_string());
+    /// buffer.insert(" changed", &scribe::buffer::Position{ line: 0, offset: 2});
     /// assert_eq!("my changed buffer data", buffer.to_string());
-    /// 
+    /// ```
     pub fn insert(&mut self, data: &str, position: &Position) {
         // Ensure we have the capacity to insert this data.
         if data.len() > self.gap_length {
@@ -64,9 +66,10 @@ impl GapBuffer {
     ///
     /// # Examples
     ///
-    /// let mut buffer = new("my data");
+    /// ```
+    /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
     /// assert_eq!(buffer.to_string(), "my data");
-    ///
+    /// ```
     pub fn to_string(&self) -> String {
         from_utf8(&self.data[..self.gap_start]).unwrap().to_string() + from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap()
     }
@@ -75,12 +78,13 @@ impl GapBuffer {
     ///
     /// # Examples
     ///
-    /// let mut buffer = new("my data");
-    /// let range = Range{ start: Position{ line: 0, offset: 0 },
-    ///   end: Position{ line: 0, offset: 3} };
-    /// buffer.remove(range)
+    /// ```
+    /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
+    /// let range = scribe::buffer::Range{ start: scribe::buffer::Position{ line: 0, offset: 0 },
+    ///   end: scribe::buffer::Position{ line: 0, offset: 3} };
+    /// buffer.remove(&range);
     /// assert_eq!(buffer.to_string(), "data");
-    ///
+    /// ```
     pub fn remove(&mut self, range: &Range) {
         let start_offset = match self.find_offset(&range.start) {
             Some(o) => o,

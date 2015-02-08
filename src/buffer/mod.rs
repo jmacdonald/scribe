@@ -6,6 +6,6 @@ pub use self::position::Position;
 pub use self::range::Range;
 
 mod buffer;
-mod gap_buffer;
+pub mod gap_buffer;
 mod position;
 mod range;
