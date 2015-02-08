@@ -20,7 +20,16 @@ pub fn new(mut data: String) -> GapBuffer {
 }
 
 impl GapBuffer {
-    // TODO: Return an optional error.
+    /// Inserts the specified data into the buffer at the specified position.
+    /// The buffer will reallocate if there is insufficient space. If the
+    /// position is out of bounds, the buffer contents will remain unchanged.
+    ///
+    /// # Examples
+    ///
+    /// let mut b = new("my buffer data");
+    /// b.insert(" changed", Position{ line: 0, offset: 2});
+    /// assert_eq!("my changed buffer data", b.to_string());
+    /// 
     pub fn insert(&mut self, data: &str, position: &Position) {
         // Ensure we have the capacity to insert this data.
         if data.len() > self.gap_length {
