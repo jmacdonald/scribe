@@ -7,6 +7,7 @@ use super::gap_buffer;
 use super::Position;
 use super::Range;
 
+/// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
     data: GapBuffer,
     pub path: Option<Path>,
