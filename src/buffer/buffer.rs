@@ -1,6 +1,7 @@
 use std::old_io::{File, Open, Read, Write};
 use std::old_io::IoError;
 use std::old_io::IoResult;
+use std::ops::Deref;
 use super::GapBuffer;
 use super::gap_buffer;
 use super::Position;
@@ -9,7 +10,22 @@ use super::Range;
 pub struct Buffer {
     data: GapBuffer,
     pub path: Option<Path>,
-    pub cursor: Position,
+    pub cursor: Cursor,
+}
+
+/// Read-only wrapper for a `Position`, to allow field level access to a
+/// buffer's cursor while simultaneously enforcing bounds-checking when
+/// updating its value.
+pub struct Cursor {
+    position: Position,
+}
+
+impl Deref for Cursor {
+    type Target = Position;
+
+    fn deref(&self) -> &Position {
+        &self.position
+    }
 }
 
 impl Buffer {
@@ -80,10 +96,6 @@ impl Buffer {
         self.data.insert(data, &self.cursor);
     }
 
-    pub fn get_cursor(&self) -> Position {
-        Position{ line: self.cursor.line, offset: self.cursor.offset }
-    }
-
     /// Moves the buffer cursor to the specified location. The location is
     /// bounds-checked against the buffer data and the cursor will not be
     /// updated if it is out-of-bounds.
@@ -97,16 +109,16 @@ impl Buffer {
     /// buffer.insert("scribe");
     ///
     /// buffer.move_cursor(in_bounds);
-    /// assert_eq!(buffer.get_cursor().line, 0);
-    /// assert_eq!(buffer.get_cursor().offset, 2);
+    /// assert_eq!(buffer.cursor.line, 0);
+    /// assert_eq!(buffer.cursor.offset, 2);
     ///
     /// buffer.move_cursor(out_of_bounds);
-    /// assert_eq!(buffer.get_cursor().line, 0);
-    /// assert_eq!(buffer.get_cursor().offset, 2);
+    /// assert_eq!(buffer.cursor.line, 0);
+    /// assert_eq!(buffer.cursor.offset, 2);
     /// ```
     pub fn move_cursor(&mut self, position: Position) {
         if self.data.in_bounds(&position) {
-            self.cursor = position;
+            self.cursor.position = position;
         }
     }
 }
@@ -122,7 +134,7 @@ impl Buffer {
 /// ```
 pub fn new() -> Buffer {
     let data = gap_buffer::new(String::new());
-    let cursor = Position{ line: 0, offset: 0 };
+    let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
 
     Buffer{ data: data, path: None, cursor: cursor }
 }
@@ -150,7 +162,7 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     };
 
     let data = gap_buffer::new(data);
-    let cursor = Position{ line: 0, offset: 0 };
+    let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
 
     // Create a new buffer using the loaded data, path, and other defaults.
     Ok(Buffer{ data: data, path: Some(path.clone()), cursor: cursor })
