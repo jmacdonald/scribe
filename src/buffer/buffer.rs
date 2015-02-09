@@ -79,6 +79,36 @@ impl Buffer {
     pub fn insert(&mut self, data: &str) {
         self.data.insert(data, &self.cursor);
     }
+
+    pub fn get_cursor(&self) -> Position {
+        Position{ line: self.cursor.line, offset: self.cursor.offset }
+    }
+
+    /// Moves the buffer cursor to the specified location. The location is
+    /// bounds-checked against the buffer data and the cursor will not be
+    /// updated if it is out-of-bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// let in_bounds = scribe::buffer::Position{ line: 0, offset: 2 };
+    /// let out_of_bounds = scribe::buffer::Position{ line: 2, offset: 2 };
+    /// buffer.insert("scribe");
+    ///
+    /// buffer.move_cursor(in_bounds);
+    /// assert_eq!(buffer.get_cursor().line, 0);
+    /// assert_eq!(buffer.get_cursor().offset, 2);
+    ///
+    /// buffer.move_cursor(out_of_bounds);
+    /// assert_eq!(buffer.get_cursor().line, 0);
+    /// assert_eq!(buffer.get_cursor().offset, 2);
+    /// ```
+    pub fn move_cursor(&mut self, position: Position) {
+        if self.data.in_bounds(&position) {
+            self.cursor = position;
+        }
+    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
