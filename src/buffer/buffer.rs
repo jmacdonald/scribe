@@ -1,33 +1,19 @@
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::old_io::{File, Open, Read, Write};
 use std::old_io::IoError;
 use std::old_io::IoResult;
-use std::ops::Deref;
 use super::GapBuffer;
 use super::gap_buffer;
 use super::Position;
 use super::Range;
+use super::Cursor;
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
-    data: RefCell<GapBuffer>,
+    data: Rc<RefCell<GapBuffer>>,
     pub path: Option<Path>,
     pub cursor: Cursor,
-}
-
-/// Read-only wrapper for a `Position`, to allow field level access to a
-/// buffer's cursor while simultaneously enforcing bounds-checking when
-/// updating its value.
-pub struct Cursor {
-    position: Position,
-}
-
-impl Deref for Cursor {
-    type Target = Position;
-
-    fn deref(&self) -> &Position {
-        &self.position
-    }
 }
 
 impl Buffer {
@@ -97,32 +83,6 @@ impl Buffer {
     pub fn insert(&mut self, data: &str) {
         self.data.borrow_mut().insert(data, &self.cursor);
     }
-
-    /// Moves the buffer cursor to the specified location. The location is
-    /// bounds-checked against the buffer data and the cursor will not be
-    /// updated if it is out-of-bounds.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let mut buffer = scribe::buffer::new();
-    /// let in_bounds = scribe::buffer::Position{ line: 0, offset: 2 };
-    /// let out_of_bounds = scribe::buffer::Position{ line: 2, offset: 2 };
-    /// buffer.insert("scribe");
-    ///
-    /// buffer.move_cursor(in_bounds);
-    /// assert_eq!(buffer.cursor.line, 0);
-    /// assert_eq!(buffer.cursor.offset, 2);
-    ///
-    /// buffer.move_cursor(out_of_bounds);
-    /// assert_eq!(buffer.cursor.line, 0);
-    /// assert_eq!(buffer.cursor.offset, 2);
-    /// ```
-    pub fn move_cursor(&mut self, position: Position) {
-        if self.data.borrow().in_bounds(&position) {
-            self.cursor.position = position;
-        }
-    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
@@ -135,10 +95,10 @@ impl Buffer {
 /// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
 pub fn new() -> Buffer {
-    let data = RefCell::new(gap_buffer::new(String::new()));
-    let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
+    let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
+    let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
-    Buffer{ data: data, path: None, cursor: cursor }
+    Buffer{ data: data.clone(), path: None, cursor: cursor }
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
@@ -163,9 +123,9 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
         Err(error) => return Err(error),
     };
 
-    let data = RefCell::new(gap_buffer::new(data));
-    let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
+    let data = Rc::new(RefCell::new(gap_buffer::new(data)));
+    let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
     // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(Buffer{ data: data, path: Some(path.clone()), cursor: cursor })
+    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor })
 }
