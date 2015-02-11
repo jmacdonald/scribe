@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::old_io::{File, Open, Read, Write};
 use std::old_io::IoError;
 use std::old_io::IoResult;
@@ -9,7 +10,7 @@ use super::Range;
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
-    data: GapBuffer,
+    data: RefCell<GapBuffer>,
     pub path: Option<Path>,
     pub cursor: Cursor,
 }
@@ -40,7 +41,7 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn data(&self) -> String {
-        self.data.to_string()
+        self.data.borrow().to_string()
     }
 
     /// Writes the contents of the buffer to its path.
@@ -94,7 +95,7 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn insert(&mut self, data: &str) {
-        self.data.insert(data, &self.cursor);
+        self.data.borrow_mut().insert(data, &self.cursor);
     }
 
     /// Moves the buffer cursor to the specified location. The location is
@@ -118,7 +119,7 @@ impl Buffer {
     /// assert_eq!(buffer.cursor.offset, 2);
     /// ```
     pub fn move_cursor(&mut self, position: Position) {
-        if self.data.in_bounds(&position) {
+        if self.data.borrow().in_bounds(&position) {
             self.cursor.position = position;
         }
     }
@@ -134,7 +135,7 @@ impl Buffer {
 /// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
 pub fn new() -> Buffer {
-    let data = gap_buffer::new(String::new());
+    let data = RefCell::new(gap_buffer::new(String::new()));
     let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
 
     Buffer{ data: data, path: None, cursor: cursor }
@@ -162,7 +163,7 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
         Err(error) => return Err(error),
     };
 
-    let data = gap_buffer::new(data);
+    let data = RefCell::new(gap_buffer::new(data));
     let cursor = Cursor{ position: Position{ line: 0, offset: 0 }};
 
     // Create a new buffer using the loaded data, path, and other defaults.
