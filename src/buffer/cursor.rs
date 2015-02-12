@@ -46,4 +46,32 @@ impl Cursor {
             self.position = position;
         }
     }
+
+    /// Decrements the cursor line. The location is bounds-checked against
+    /// the data and the cursor will not be updated if it is out-of-bounds.
+    pub fn move_up(&mut self) {
+        let new_position = Position{ line: self.line-1, offset: self.offset };
+        self.move_to(new_position);
+    }
+
+    /// Increments the cursor line. The location is bounds-checked against
+    /// the data and the cursor will not be updated if it is out-of-bounds.
+    pub fn move_down(&mut self) {
+        let new_position = Position{ line: self.line+1, offset: self.offset };
+        self.move_to(new_position);
+    }
+
+    /// Decrements the cursor offset. The location is bounds-checked against
+    /// the data and the cursor will not be updated if it is out-of-bounds.
+    pub fn move_left(&mut self) {
+        let new_position = Position{ line: self.line, offset: self.offset-1 };
+        self.move_to(new_position);
+    }
+
+    /// Increments the cursor offset. The location is bounds-checked against
+    /// the data and the cursor will not be updated if it is out-of-bounds.
+    pub fn move_right(&mut self) {
+        let new_position = Position{ line: self.line, offset: self.offset+1 };
+        self.move_to(new_position);
+    }
 }
