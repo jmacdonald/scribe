@@ -82,10 +82,10 @@ impl GapBuffer {
     /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
     /// let range = scribe::buffer::Range{ start: scribe::buffer::Position{ line: 0, offset: 0 },
     ///   end: scribe::buffer::Position{ line: 0, offset: 3} };
-    /// buffer.remove(&range);
+    /// buffer.delete(&range);
     /// assert_eq!(buffer.to_string(), "data");
     /// ```
-    pub fn remove(&mut self, range: &Range) {
+    pub fn delete(&mut self, range: &Range) {
         let start_offset = match self.find_offset(&range.start) {
             Some(o) => o,
             None => return,
@@ -259,21 +259,21 @@ mod tests {
     }
 
     #[test]
-    fn removing_works() {
+    fn deleting_works() {
         let mut gb = new("This is a test.\nSee what happens.".to_string());
         let start = Position{ line: 0, offset: 8 };
         let end = Position{ line: 1, offset: 4 };
-        gb.remove(&Range{ start: start, end: end });
+        gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "This is what happens.");
     }
 
     #[test]
-    fn inserting_then_removing_at_the_start_works() {
+    fn inserting_then_deleting_at_the_start_works() {
         let mut gb = new(String::new());
         gb.insert("This is a test.", &Position{ line: 0, offset: 0});
         let start = Position{ line: 0, offset: 0 };
         let end = Position{ line: 0, offset: 1 };
-        gb.remove(&Range{ start: start, end: end });
+        gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "his is a test.");
     }
 }
