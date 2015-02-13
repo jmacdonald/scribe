@@ -181,7 +181,7 @@ impl GapBuffer {
 
         if offset < self.gap_start {
             // Shift the gap to the left one byte at a time.
-            for index in (offset..self.gap_start) {
+            for index in (offset..self.gap_start).rev() {
                 self.data[index + self.gap_length] = self.data[index];
                 self.data[index] = 0;
             }
@@ -265,5 +265,15 @@ mod tests {
         let end = Position{ line: 1, offset: 4 };
         gb.remove(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "This is what happens.");
+    }
+
+    #[test]
+    fn inserting_then_removing_at_the_start_works() {
+        let mut gb = new(String::new());
+        gb.insert("This is a test.", &Position{ line: 0, offset: 0});
+        let start = Position{ line: 0, offset: 0 };
+        let end = Position{ line: 0, offset: 1 };
+        gb.remove(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "his is a test.");
     }
 }
