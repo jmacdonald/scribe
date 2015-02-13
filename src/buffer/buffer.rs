@@ -83,6 +83,22 @@ impl Buffer {
     pub fn insert(&mut self, data: &str) {
         self.data.borrow_mut().insert(data, &self.cursor);
     }
+
+    /// Deletes a character at the cursor position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// buffer.delete();
+    /// assert_eq!(buffer.data(), "cribe");
+    /// ```
+    pub fn delete(&mut self) {
+        let mut end = self.cursor.clone();
+        end.offset += 1;
+        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
+    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
