@@ -63,7 +63,9 @@ impl Buffer {
             Ok(f) => f,
             Err(error) => return Some(error),
         };
-        match file.write(self.data().as_bytes()) {
+
+        // We use to_string here because we don't want to write the gap contents.
+        match file.write(self.data().to_string().as_bytes()) {
             Ok(_) => (),
             Err(error) => return Some(error),
         }
