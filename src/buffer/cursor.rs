@@ -41,17 +41,29 @@ impl Cursor {
     /// assert_eq!(buffer.cursor.line, 0);
     /// assert_eq!(buffer.cursor.offset, 2);
     /// ```
-    pub fn move_to(&mut self, position: Position) {
+    pub fn move_to(&mut self, position: Position) -> bool {
         if self.data.borrow().in_bounds(&position) {
             self.position = position;
+            return true
         }
+        false
     }
 
     /// Decrements the cursor line. The location is bounds-checked against
     /// the data and the cursor will not be updated if it is out-of-bounds.
+    ///
+    /// TODO: Make this more efficient by checking the
+    /// target line's existence and using its length.
     pub fn move_up(&mut self) {
-        let new_position = Position{ line: self.line-1, offset: self.offset };
-        self.move_to(new_position);
+        let mut moved = false;
+        let mut offset = self.offset;
+        let mut new_position: Position;
+
+        while moved == false && offset >= 0 {
+            new_position = Position{ line: self.line-1, offset: offset };
+            moved = self.move_to(new_position);
+            offset -= 1;
+        }
     }
 
     /// Increments the cursor line. The location is bounds-checked against
@@ -73,5 +85,24 @@ impl Cursor {
     pub fn move_right(&mut self) {
         let new_position = Position{ line: self.line, offset: self.offset+1 };
         self.move_to(new_position);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Cursor;
+    use super::super::gap_buffer;
+    use super::super::Position;
+    use std::rc::Rc;
+    use std::cell::RefCell;
+
+    #[test]
+    fn move_up_goes_to_EOL_if_offset_would_be_out_of_range() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line that is longer.".to_string())));
+        let position = Position{ line: 1, offset: 20 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_up();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 15);
     }
 }
