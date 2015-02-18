@@ -53,7 +53,7 @@ impl Cursor {
     /// the data and the cursor will not be updated if it is out-of-bounds.
     pub fn move_up(&mut self) {
         let target_line = self.line-1;
-        let mut new_position = Position{ line: target_line, offset: self.offset };
+        let new_position = Position{ line: target_line, offset: self.offset };
 
         // Try moving to the same offset on the line above, falling back to its EOL.
         if self.move_to(new_position) == false {
