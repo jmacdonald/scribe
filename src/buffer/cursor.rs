@@ -73,8 +73,19 @@ impl Cursor {
     /// Increments the cursor line. The location is bounds-checked against
     /// the data and the cursor will not be updated if it is out-of-bounds.
     pub fn move_down(&mut self) {
-        let new_position = Position{ line: self.line+1, offset: self.offset };
-        self.move_to(new_position);
+        let target_line = self.line+1;
+        let new_position = Position{ line: target_line, offset: self.offset };
+
+        // Try moving to the same offset on the line below, falling back to its EOL.
+        if self.move_to(new_position) == false {
+            let mut target_offset = 0;
+            for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
+                if line_number == target_line {
+                    target_offset = line.len();
+                }
+            }
+            self.move_to(Position{ line: target_line, offset: target_offset });
+        }
     }
 
     /// Decrements the cursor offset. The location is bounds-checked against
@@ -107,6 +118,16 @@ mod tests {
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_up();
         assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 15);
+    }
+
+    #[test]
+    fn move_down_goes_to_EOL_if_offset_would_be_out_of_range() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("Another line that is longer.\nThis is a test.".to_string())));
+        let position = Position{ line: 0, offset: 20 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_down();
+        assert_eq!(cursor.line, 1);
         assert_eq!(cursor.offset, 15);
     }
 }
