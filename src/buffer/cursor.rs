@@ -55,6 +55,9 @@ impl Cursor {
         let target_line = self.line-1;
         let new_position = Position{ line: target_line, offset: self.offset };
 
+        // Don't even bother if the target line is negative.
+        if target_line < 0 { return }
+
         // Try moving to the same offset on the line above, falling back to its EOL.
         if self.move_to(new_position) == false {
             let mut target_offset = 0;
