@@ -51,18 +51,19 @@ impl Cursor {
 
     /// Decrements the cursor line. The location is bounds-checked against
     /// the data and the cursor will not be updated if it is out-of-bounds.
-    ///
-    /// TODO: Make this more efficient by checking the
-    /// target line's existence and using its length.
     pub fn move_up(&mut self) {
-        let mut moved = false;
-        let mut offset = self.offset;
-        let mut new_position: Position;
+        let target_line = self.line-1;
+        let mut new_position = Position{ line: target_line, offset: self.offset };
 
-        while moved == false && offset >= 0 {
-            new_position = Position{ line: self.line-1, offset: offset };
-            moved = self.move_to(new_position);
-            offset -= 1;
+        // Try moving to the same offset on the line above, falling back to its EOL.
+        if self.move_to(new_position) == false {
+            let mut target_offset = 0;
+            for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
+                if line_number == target_line {
+                    target_offset = line.len();
+                }
+            }
+            self.move_to(Position{ line: target_line, offset: target_offset });
         }
     }
 
