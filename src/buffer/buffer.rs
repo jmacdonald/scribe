@@ -106,6 +106,24 @@ impl Buffer {
         self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
     }
 
+    /// Produces a set of tokens based on the buffer data
+    /// suitable for colorized display, using a lexer for the
+    /// buffer data's language and/or format. If a lexer is not
+    /// available, the set will consist of a single text-category token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// 
+    /// // Build the buffer data string back by combining its token lexemes.
+    /// let mut data = String::new();
+    /// for token in buffer.tokens().iter() {
+    ///     data.push_str(token.lexeme.as_slice());
+    /// }
+    /// assert_eq!(data, "scribe");
+    /// ```
     pub fn tokens(&self) -> Vec<Token> {
         match self.lexer {
             Some(lexer) => lexer(&self.data()),
