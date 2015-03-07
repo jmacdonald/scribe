@@ -10,7 +10,9 @@ use super::gap_buffer;
 use super::Position;
 use super::Range;
 use super::Cursor;
+use super::type_detection;
 use self::luthor::token::{Token, Category};
+use self::luthor::lexers;
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
@@ -149,7 +151,9 @@ pub fn new() -> Buffer {
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
-/// The buffer's cursor is set to the beginning of the buffer.
+/// The buffer's cursor is set to the beginning of the buffer. The buffer data's type will be
+/// inferred based on its extension, and an appropriate lexer will be used, if available (see
+/// tokens method for further information on why this happens).
 ///
 /// # Examples
 ///
@@ -173,8 +177,14 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     let data = Rc::new(RefCell::new(gap_buffer::new(data)));
     let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
+    // Detect the file type and use its corresponding lexer, if available.
+    let lexer = match type_detection::from_path(path) {
+        Some(type_detection::Type::JSON) => Some(lexers::json::lex as fn(&str) -> Vec<Token>),
+        _ => None,
+    };
+
     // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor, lexer: None })
+    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor, lexer: lexer })
 }
 
 #[cfg(test)]
