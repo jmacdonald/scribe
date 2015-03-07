@@ -1,3 +1,5 @@
+extern crate luthor;
+
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::old_io::{File, Open, Read, Write};
@@ -8,10 +10,12 @@ use super::gap_buffer;
 use super::Position;
 use super::Range;
 use super::Cursor;
+use self::luthor::token::Token;
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
     data: Rc<RefCell<GapBuffer>>,
+    lexer: Option<fn(&str) -> Vec<Token>>,
     pub path: Option<Path>,
     pub cursor: Cursor,
 }
@@ -116,7 +120,7 @@ pub fn new() -> Buffer {
     let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
     let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
-    Buffer{ data: data.clone(), path: None, cursor: cursor }
+    Buffer{ data: data.clone(), path: None, cursor: cursor, lexer: None }
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
@@ -145,5 +149,5 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
     // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor })
+    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor, lexer: None })
 }
