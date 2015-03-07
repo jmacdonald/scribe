@@ -10,7 +10,7 @@ use super::gap_buffer;
 use super::Position;
 use super::Range;
 use super::Cursor;
-use self::luthor::token::Token;
+use self::luthor::token::{Token, Category};
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.
 pub struct Buffer {
@@ -105,6 +105,13 @@ impl Buffer {
         end.offset += 1;
         self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
     }
+
+    pub fn tokens(&self) -> Vec<Token> {
+        match self.lexer {
+            Some(l) => vec![],
+            None => vec![Token{ lexeme: self.data(), category: Category::Text }],
+        }
+    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
@@ -150,4 +157,18 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
 
     // Create a new buffer using the loaded data, path, and other defaults.
     Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor, lexer: None })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::new;
+    use super::luthor::token::{Token, Category};
+
+    #[test]
+    fn tokens_returns_one_text_token_when_no_lexer_is_set() {
+        let mut buffer = new();
+        buffer.insert("scribe");
+        let expected_tokens = vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }];
+        assert_eq!(buffer.tokens(), expected_tokens);
+    }
 }
