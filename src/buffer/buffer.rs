@@ -108,7 +108,7 @@ impl Buffer {
 
     pub fn tokens(&self) -> Vec<Token> {
         match self.lexer {
-            Some(l) => vec![],
+            Some(lexer) => lexer(&self.data()),
             None => vec![Token{ lexeme: self.data(), category: Category::Text }],
         }
     }
@@ -164,11 +164,23 @@ mod tests {
     use super::new;
     use super::luthor::token::{Token, Category};
 
+    fn placeholder_lexer(_: &str) -> Vec<Token> {
+        vec![Token{ lexeme: "lexer".to_string(), category: Category::Text }]
+    }
+
     #[test]
     fn tokens_returns_one_text_token_when_no_lexer_is_set() {
         let mut buffer = new();
         buffer.insert("scribe");
         let expected_tokens = vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }];
+        assert_eq!(buffer.tokens(), expected_tokens);
+    }
+
+    #[test]
+    fn tokens_returns_result_of_lexer_when_set() {
+        let mut buffer = new();
+        let expected_tokens = placeholder_lexer("scribe");
+        buffer.lexer = Some(placeholder_lexer);
         assert_eq!(buffer.tokens(), expected_tokens);
     }
 }
