@@ -180,6 +180,7 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     // Detect the file type and use its corresponding lexer, if available.
     let lexer = match type_detection::from_path(path) {
         Some(type_detection::Type::JSON) => Some(lexers::json::lex as fn(&str) -> Vec<Token>),
+        Some(type_detection::Type::XML) => Some(lexers::xml::lex as fn(&str) -> Vec<Token>),
         _ => None,
     };
 
