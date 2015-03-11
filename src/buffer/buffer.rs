@@ -92,7 +92,9 @@ impl Buffer {
         self.data.borrow_mut().insert(data, &self.cursor);
     }
 
-    /// Deletes a character at the cursor position.
+    /// Deletes a character at the cursor position. If at the end
+    /// of the current line, it'll try to delete a newline character
+    /// (joining the lines), succeeding if there's a line below.
     ///
     /// # Examples
     ///
@@ -103,9 +105,20 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "cribe");
     /// ```
     pub fn delete(&mut self) {
-        let mut end = self.cursor.clone();
-        end.offset += 1;
-        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: *end});
+        // We need to specify a range to delete, so start at
+        // the current offset and delete the character to the right.
+        let mut end = Position{ line: self.cursor.line, offset: self.cursor.offset + 1 };
+
+        // If there isn't a character to the right,
+        // delete the newline by jumping to the start
+        // of the next line. If it doesn't exist, that's okay;
+        // these values are bounds-checked by delete() anyway.
+        if !self.data.borrow().in_bounds(&end) {
+            end.line += 1;
+            end.offset = 0;
+        }
+
+        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
     }
 
     /// Produces a set of tokens based on the buffer data
@@ -211,5 +224,24 @@ mod tests {
         let expected_tokens = placeholder_lexer("scribe");
         buffer.lexer = Some(placeholder_lexer);
         assert_eq!(buffer.tokens(), expected_tokens);
+    }
+
+    #[test]
+    fn delete_joins_lines_when_invoked_at_end_of_line() {
+        let mut buffer = new();
+        buffer.insert("scribe\n library");
+        buffer.cursor.move_to_end_of_line();
+        buffer.delete();
+        assert_eq!(buffer.data(), "scribe library");
+    }
+
+    #[test]
+    fn delete_does_nothing_when_invoked_at_the_end_of_the_document() {
+        let mut buffer = new();
+        buffer.insert("scribe\n library");
+        buffer.cursor.move_down();
+        buffer.cursor.move_to_end_of_line();
+        buffer.delete();
+        assert_eq!(buffer.data(), "scribe\n library");
     }
 }
