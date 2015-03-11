@@ -107,6 +107,19 @@ impl Cursor {
         let new_position = Position{ line: self.line, offset: 0 };
         self.move_to(new_position);
     }
+
+    /// Moves the cursor offset to after the last character on the current line.
+    pub fn move_to_end_of_line(&mut self) {
+        let data = self.data.borrow().to_string();
+        let current_line = data.lines().nth(self.line);
+        match current_line {
+            Some(line) => {
+                let new_position = Position{ line: self.line, offset: line.len() };
+                self.move_to(new_position);
+            },
+            None => (),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -145,5 +158,15 @@ mod tests {
         cursor.move_to_start_of_line();
         assert_eq!(cursor.line, 1);
         assert_eq!(cursor.offset, 0);
+    }
+
+    #[test]
+    fn move_to_end_of_line_sets_offset_the_line_length() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
+        let position = Position{ line: 0, offset: 5 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_to_end_of_line();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 15);
     }
 }
