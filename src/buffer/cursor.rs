@@ -101,6 +101,12 @@ impl Cursor {
         let new_position = Position{ line: self.line, offset: self.offset+1 };
         self.move_to(new_position);
     }
+
+    /// Sets the cursor offset to 0: the start of the current line.
+    pub fn move_to_start_of_line(&mut self) {
+        let new_position = Position{ line: self.line, offset: 0 };
+        self.move_to(new_position);
+    }
 }
 
 #[cfg(test)]
@@ -129,5 +135,15 @@ mod tests {
         cursor.move_down();
         assert_eq!(cursor.line, 1);
         assert_eq!(cursor.offset, 15);
+    }
+
+    #[test]
+    fn move_to_start_of_line_sets_offset_to_zero() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
+        let position = Position{ line: 1, offset: 5 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_to_start_of_line();
+        assert_eq!(cursor.line, 1);
+        assert_eq!(cursor.offset, 0);
     }
 }
