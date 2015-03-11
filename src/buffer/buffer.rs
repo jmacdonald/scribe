@@ -105,7 +105,7 @@ impl Buffer {
     pub fn delete(&mut self) {
         let mut end = self.cursor.clone();
         end.offset += 1;
-        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
+        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: *end});
     }
 
     /// Produces a set of tokens based on the buffer data

@@ -7,6 +7,7 @@ use super::GapBuffer;
 /// Read-only wrapper for a `Position`, to allow field level access to a
 /// buffer's cursor while simultaneously enforcing bounds-checking when
 /// updating its value.
+#[derive(Clone)]
 pub struct Cursor {
     pub data: Rc<RefCell<GapBuffer>>,
     pub position: Position,
