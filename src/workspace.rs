@@ -9,16 +9,9 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn open_file(&mut self, path: Path) -> Option<IoError> {
-        match buffer::from_file(path) {
-            Ok(b) => {
-                self.buffers.push(b);
-                self.current_buffer_index = Some(self.buffers.len()-1);
-            },
-            Err(e) => return Some(e),
-        }
-
-        None
+    pub fn add_buffer(&mut self, buf: Buffer) {
+        self.buffers.push(buf);
+        self.current_buffer_index = Some(self.buffers.len()-1);
     }
     
     pub fn current_buffer(&self) -> Option<&Buffer> {
@@ -36,12 +29,13 @@ pub fn new(path: Path) -> Workspace {
 #[cfg(test)]
 mod tests {
     use super::new;
+    use buffer;
 
     #[test]
-    fn open_file_adds_and_selects_a_properly_initialized_buffer() {
+    fn add_buffer_adds_and_selects_the_passed_buffer() {
         let mut workspace = new(Path::new("tests/sample"));
-        let file_path = Path::new("tests/sample/file");
-        workspace.open_file(file_path);
+        let buf = buffer::from_file(Path::new("tests/sample/file")).unwrap();
+        workspace.add_buffer(buf);
 
         assert_eq!(workspace.buffers.len(), 1);
         assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
@@ -56,8 +50,8 @@ mod tests {
     #[test]
     fn current_buffer_returns_one_when_there_are_buffers() {
         let mut workspace = new(Path::new("tests/sample"));
-        let file_path = Path::new("tests/sample/file");
-        workspace.open_file(file_path);
+        let buf = buffer::from_file(Path::new("tests/sample/file")).unwrap();
+        workspace.add_buffer(buf);
         assert!(workspace.current_buffer().is_some());
     }
 }
