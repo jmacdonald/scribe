@@ -11,7 +11,10 @@ pub struct Workspace {
 impl Workspace {
     pub fn open_file(&mut self, path: Path) -> Option<IoError> {
         match buffer::from_file(path) {
-            Ok(b) => self.buffers.push(b),
+            Ok(b) => {
+                self.buffers.push(b);
+                self.current_buffer_index = Some(self.buffers.len()-1);
+            },
             Err(e) => return Some(e),
         }
 
@@ -35,12 +38,13 @@ mod tests {
     use super::new;
 
     #[test]
-    fn open_file_adds_a_properly_initialized_buffer() {
+    fn open_file_adds_and_selects_a_properly_initialized_buffer() {
         let mut workspace = new(Path::new("tests/sample"));
         let file_path = Path::new("tests/sample/file");
         workspace.open_file(file_path);
 
         assert_eq!(workspace.buffers.len(), 1);
+        assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
     }
 
     #[test]
