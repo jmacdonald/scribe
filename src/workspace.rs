@@ -17,6 +17,13 @@ impl Workspace {
 
         None
     }
+    
+    pub fn current_buffer(&self) -> Option<&Buffer> {
+        match self.current_buffer_index {
+            Some(index) => Some(&self.buffers[index]),
+            None => None,
+        }
+    }
 }
 
 pub fn new(path: Path) -> Workspace {
@@ -34,5 +41,19 @@ mod tests {
         workspace.open_file(file_path);
 
         assert_eq!(workspace.buffers.len(), 1);
+    }
+
+    #[test]
+    fn current_buffer_returns_none_when_there_are_no_buffers() {
+        let mut workspace = new(Path::new("tests/sample"));
+        assert!(workspace.current_buffer().is_none());
+    }
+
+    #[test]
+    fn current_buffer_returns_one_when_there_are_buffers() {
+        let mut workspace = new(Path::new("tests/sample"));
+        let file_path = Path::new("tests/sample/file");
+        workspace.open_file(file_path);
+        assert!(workspace.current_buffer().is_some());
     }
 }
