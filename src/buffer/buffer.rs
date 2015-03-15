@@ -171,14 +171,14 @@ pub fn new() -> Buffer {
 /// # Examples
 ///
 /// ```
-/// let buffer = scribe::buffer::from_file(&Path::new("tests/sample/file")).unwrap();
+/// let buffer = scribe::buffer::from_file(Path::new("tests/sample/file")).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
 /// # assert_eq!(buffer.cursor.line, 0);
 /// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
-pub fn from_file(path: &Path) -> IoResult<Buffer> {
+pub fn from_file(path: Path) -> IoResult<Buffer> {
     // Try to open and read the file, returning any errors encountered.
-    let mut file = match File::open_mode(path, Open, Read) {
+    let mut file = match File::open_mode(&path, Open, Read) {
         Ok(f) => f,
         Err(error) => return Err(error),
     };
@@ -191,14 +191,14 @@ pub fn from_file(path: &Path) -> IoResult<Buffer> {
     let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
     // Detect the file type and use its corresponding lexer, if available.
-    let lexer = match type_detection::from_path(path) {
+    let lexer = match type_detection::from_path(&path) {
         Some(type_detection::Type::JSON) => Some(lexers::json::lex as fn(&str) -> Vec<Token>),
         Some(type_detection::Type::XML) => Some(lexers::xml::lex as fn(&str) -> Vec<Token>),
         _ => None,
     };
 
     // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(Buffer{ data: data.clone(), path: Some(path.clone()), cursor: cursor, lexer: lexer })
+    Ok(Buffer{ data: data.clone(), path: Some(path), cursor: cursor, lexer: lexer })
 }
 
 #[cfg(test)]
