@@ -83,6 +83,7 @@ mod tests {
         workspace.add_buffer(buffer::new());
         workspace.close_current_buffer();
         assert!(workspace.current_buffer().is_none());
+        assert!(workspace.current_buffer_index.is_none());
     }
 
     #[test]
