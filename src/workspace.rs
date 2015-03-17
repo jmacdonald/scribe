@@ -126,26 +126,33 @@ mod tests {
     }
 
     #[test]
-    fn previous_buffer_when_two_are_open_selects_the_first_and_cycles_back_to_the_last() {
+    fn previous_buffer_when_three_are_open_selects_previous_wrapping_to_last() {
         let mut workspace = new(Path::new("tests/sample"));
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = buffer::new();
         let mut second_buffer = buffer::new();
+        let mut third_buffer = buffer::new();
         first_buffer.insert("first buffer");
         second_buffer.insert("second buffer");
+        third_buffer.insert("third buffer");
         workspace.add_buffer(first_buffer);
         workspace.add_buffer(second_buffer);
+        workspace.add_buffer(third_buffer);
 
-        // Ensure that the second buffer is currently selected.
+        // Ensure that the third buffer is currently selected.
+        assert_eq!(workspace.current_buffer().unwrap().data(), "third buffer");
+
+        // Ensure that the second buffer is returned.
+        workspace.previous_buffer();
         assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
 
         // Ensure that the first buffer is returned.
         workspace.previous_buffer();
         assert_eq!(workspace.current_buffer().unwrap().data(), "first buffer");
 
-        // Ensure that the second buffer is returned.
+        // Ensure that it wraps back to the third buffer.
         workspace.previous_buffer();
-        assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
+        assert_eq!(workspace.current_buffer().unwrap().data(), "third buffer");
     }
 }
