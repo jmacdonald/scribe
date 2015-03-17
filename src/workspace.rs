@@ -35,6 +35,19 @@ impl Workspace {
             None => return,
         };
     }
+
+    pub fn previous_buffer(&mut self) {
+        match self.current_buffer_index {
+            Some(index) => {
+                if index > 0 {
+                    self.current_buffer_index = Some(index-1);
+                } else {
+                    self.current_buffer_index = Some(self.buffers.len()-1);
+                }
+            },
+            None => return,
+        }
+    }
 }
 
 pub fn new(path: Path) -> Workspace {
@@ -103,5 +116,36 @@ mod tests {
 
         workspace.close_current_buffer();
         assert_eq!(workspace.current_buffer().unwrap().data(), "first buffer");
+    }
+
+    #[test]
+    fn previous_buffer_does_nothing_when_no_buffers_are_open() {
+        let mut workspace = new(Path::new("tests/sample"));
+        workspace.previous_buffer();
+        assert!(workspace.current_buffer().is_none());
+    }
+
+    #[test]
+    fn previous_buffer_when_two_are_open_selects_the_first_and_cycles_back_to_the_last() {
+        let mut workspace = new(Path::new("tests/sample"));
+
+        // Create two buffers and add them to the workspace.
+        let mut first_buffer = buffer::new();
+        let mut second_buffer = buffer::new();
+        first_buffer.insert("first buffer");
+        second_buffer.insert("second buffer");
+        workspace.add_buffer(first_buffer);
+        workspace.add_buffer(second_buffer);
+
+        // Ensure that the second buffer is currently selected.
+        assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
+
+        // Ensure that the first buffer is returned.
+        workspace.previous_buffer();
+        assert_eq!(workspace.current_buffer().unwrap().data(), "first buffer");
+
+        // Ensure that the second buffer is returned.
+        workspace.previous_buffer();
+        assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
     }
 }
