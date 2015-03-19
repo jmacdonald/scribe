@@ -2,6 +2,7 @@ extern crate luthor;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::str::from_utf8;
 use std::old_io::{File, Open, Read, Write};
 use std::old_io::IoError;
 use std::old_io::IoResult;
@@ -143,6 +144,32 @@ impl Buffer {
         match self.lexer {
             Some(lexer) => lexer(&self.data()),
             None => vec![Token{ lexeme: self.data(), category: Category::Text }],
+        }
+    }
+
+    /// Returns the filename portion of the buffer's path, if
+    /// the path is set and its filename is a valid UTF-8 sequence.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let buffer = scribe::buffer::from_file(Path::new("tests/sample/file")).unwrap();
+    /// assert_eq!(buffer.filename().unwrap(), "file");
+    /// ```
+    pub fn filename(&self) -> Option<String> {
+        match self.path {
+            Some(ref path) => {
+                match path.filename() {
+                    Some(filename) => {
+                        match from_utf8(filename) {
+                            Ok(utf8_filename) => Some(utf8_filename.to_string()),
+                            Err(_) => None,
+                        }
+                    },
+                    None => None,
+                }
+            },
+            None => None,
         }
     }
 }
