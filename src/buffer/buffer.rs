@@ -3,9 +3,10 @@ extern crate luthor;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::str::from_utf8;
-use std::old_io::{File, Open, Read, Write};
-use std::old_io::IoError;
-use std::old_io::IoResult;
+use std::fs::File;
+use std::io;
+use std::io::{Read, Write};
+use std::path::PathBuf;
 use super::GapBuffer;
 use super::gap_buffer;
 use super::Position;
@@ -19,7 +20,7 @@ use self::luthor::lexers;
 pub struct Buffer {
     data: Rc<RefCell<GapBuffer>>,
     lexer: Option<fn(&str) -> Vec<Token>>,
-    pub path: Option<Path>,
+    pub path: Option<PathBuf>,
     pub cursor: Cursor,
 }
 
@@ -42,37 +43,41 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// # use std::old_io::{File, Open, Read};
+    /// # use std::path::PathBuf;
+    /// # use std::path::Path;
+    /// # use std::fs::File;
+    /// # use std::io::Read;
     ///
     /// // Set up a buffer and point it to a path.
     /// let mut buffer = scribe::buffer::new();
-    /// let write_path = Path::new("my_doc");
+    /// let write_path = PathBuf::new("my_doc");
     /// buffer.path = Some(write_path.clone());
     ///
     /// // Put some data into the buffer and save it.
     /// buffer.insert("scribe");
     /// buffer.save();
     ///
-    /// # let saved_data = File::open_mode(&write_path, Open, Read)
-    /// #   .unwrap().read_to_string().unwrap();
+    /// # let mut saved_data = String::new();
+    /// # File::open(Path::new("my_doc")).unwrap().
+    /// #   read_to_string(&mut saved_data).unwrap();
     /// # assert_eq!(saved_data, "scribe");
     ///
-    /// # std::old_io::fs::unlink(&write_path);
+    /// # std::fs::remove_file(&write_path);
     /// ```
-    pub fn save(&self) -> Option<IoError> {
+    pub fn save(&self) -> Option<io::Error> {
         let path = match self.path.clone() {
             Some(p) => p,
-            None => Path::new(""),
+            None => PathBuf::new(""),
         };
 
         // Try to open and write to the file, returning any errors encountered.
-        let mut file = match File::open_mode(&path, Open, Write) {
+        let mut file = match File::create(&path) {
             Ok(f) => f,
             Err(error) => return Some(error),
         };
 
         // We use to_string here because we don't want to write the gap contents.
-        match file.write(self.data().to_string().as_bytes()) {
+        match file.write_all(self.data().to_string().as_bytes()) {
             Ok(_) => (),
             Err(error) => return Some(error),
         }
@@ -147,23 +152,25 @@ impl Buffer {
         }
     }
 
-    /// Returns the filename portion of the buffer's path, if
-    /// the path is set and its filename is a valid UTF-8 sequence.
+    /// Returns the file name portion of the buffer's path, if
+    /// the path is set and its file name is a valid UTF-8 sequence.
     ///
     /// # Examples
     ///
     /// ```
-    /// let buffer = scribe::buffer::from_file(Path::new("tests/sample/file")).unwrap();
-    /// assert_eq!(buffer.filename().unwrap(), "file");
+    /// use std::path::PathBuf;
+    ///
+    /// let buffer = scribe::buffer::from_file(PathBuf::new("tests/sample/file")).unwrap();
+    /// assert_eq!(buffer.file_name().unwrap(), "file");
     /// ```
-    pub fn filename(&self) -> Option<String> {
+    pub fn file_name(&self) -> Option<String> {
         match self.path {
             Some(ref path) => {
-                match path.filename() {
-                    Some(filename) => {
-                        match from_utf8(filename) {
-                            Ok(utf8_filename) => Some(utf8_filename.to_string()),
-                            Err(_) => None,
+                match path.file_name() {
+                    Some(file_name) => {
+                        match file_name.to_str() {
+                            Some(utf8_file_name) => Some(utf8_file_name.to_string()),
+                            None => None,
                         }
                     },
                     None => None,
@@ -198,19 +205,22 @@ pub fn new() -> Buffer {
 /// # Examples
 ///
 /// ```
-/// let buffer = scribe::buffer::from_file(Path::new("tests/sample/file")).unwrap();
+/// use std::path::PathBuf;
+///
+/// let buffer = scribe::buffer::from_file(PathBuf::new("tests/sample/file")).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
 /// # assert_eq!(buffer.cursor.line, 0);
 /// # assert_eq!(buffer.cursor.offset, 0);
 /// ```
-pub fn from_file(path: Path) -> IoResult<Buffer> {
+pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
     // Try to open and read the file, returning any errors encountered.
-    let mut file = match File::open_mode(&path, Open, Read) {
+    let mut file = match File::open(path.clone()) {
         Ok(f) => f,
         Err(error) => return Err(error),
     };
-    let mut data = match file.read_to_string() {
-        Ok(d) => d,
+    let mut data = String::new();
+    match file.read_to_string(&mut data) {
+        Ok(_) => (),
         Err(error) => return Err(error),
     };
 

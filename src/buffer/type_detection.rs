@@ -1,3 +1,5 @@
+use std::path::Path;
+
 #[derive(Debug, PartialEq)]
 pub enum Type {
     JSON,
@@ -5,7 +7,7 @@ pub enum Type {
 }
 
 pub fn from_path(path: &Path) -> Option<Type> {
-    match path.filename_str() {
+    match path.to_str() {
         Some(filename) => {
             let extension = filename.split('.').last();
             match extension {
@@ -19,6 +21,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
 }
 
 mod tests {
+    use std::path::Path;
     use super::from_path;
     use super::Type;
 
