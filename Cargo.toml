@@ -8,4 +8,4 @@ homepage = "https://github.com/jmacdonald/scribe"
 license = "MIT"
 
 [dependencies]
-luthor = "0.0.2"
+luthor = "0.0.3"
