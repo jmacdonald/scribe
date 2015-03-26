@@ -53,11 +53,11 @@ impl Cursor {
     /// Decrements the cursor line. The location is bounds-checked against
     /// the data and the cursor will not be updated if it is out-of-bounds.
     pub fn move_up(&mut self) {
+        // Don't bother if we are already at the top.
+        if self.line == 0 { return; }
+
         let target_line = self.line-1;
         let new_position = Position{ line: target_line, offset: self.offset };
-
-        // Don't even bother if the target line is negative.
-        if target_line < 0 { return }
 
         // Try moving to the same offset on the line above, falling back to its EOL.
         if self.move_to(new_position) == false {
@@ -92,6 +92,9 @@ impl Cursor {
     /// Decrements the cursor offset. The location is bounds-checked against
     /// the data and the cursor will not be updated if it is out-of-bounds.
     pub fn move_left(&mut self) {
+        // Don't bother if we are already at the left edge.
+        if self.offset == 0 { return; }
+
         let new_position = Position{ line: self.line, offset: self.offset-1 };
         self.move_to(new_position);
     }
@@ -169,5 +172,25 @@ mod tests {
         cursor.move_to_end_of_line();
         assert_eq!(cursor.line, 0);
         assert_eq!(cursor.offset, 15);
+    }
+
+    #[test]
+    fn move_up_does_nothing_if_at_the_start_of_line() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
+        let position = Position{ line: 0, offset: 0 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_up();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 0);
+    }
+
+    #[test]
+    fn move_left_does_nothing_if_at_the_start_of_line() {
+        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
+        let position = Position{ line: 0, offset: 0 };
+        let mut cursor = Cursor{ data: buffer, position: position };
+        cursor.move_left();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 0);
     }
 }
