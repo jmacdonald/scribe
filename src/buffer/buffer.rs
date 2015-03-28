@@ -43,6 +43,7 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
+    /// # #![feature(convert)]
     /// # use std::path::PathBuf;
     /// # use std::path::Path;
     /// # use std::fs::File;
@@ -50,7 +51,7 @@ impl Buffer {
     ///
     /// // Set up a buffer and point it to a path.
     /// let mut buffer = scribe::buffer::new();
-    /// let write_path = PathBuf::new("my_doc");
+    /// let write_path = PathBuf::from("my_doc");
     /// buffer.path = Some(write_path.clone());
     ///
     /// // Put some data into the buffer and save it.
@@ -67,7 +68,7 @@ impl Buffer {
     pub fn save(&self) -> Option<io::Error> {
         let path = match self.path.clone() {
             Some(p) => p,
-            None => PathBuf::new(""),
+            None => PathBuf::new(),
         };
 
         // Try to open and write to the file, returning any errors encountered.
@@ -158,9 +159,11 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
+    /// # #![feature(convert)]
     /// use std::path::PathBuf;
     ///
-    /// let buffer = scribe::buffer::from_file(PathBuf::new("tests/sample/file")).unwrap();
+    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let buffer = scribe::buffer::from_file(file_path).unwrap();
     /// assert_eq!(buffer.file_name().unwrap(), "file");
     /// ```
     pub fn file_name(&self) -> Option<String> {
@@ -205,9 +208,11 @@ pub fn new() -> Buffer {
 /// # Examples
 ///
 /// ```
+/// # #![feature(convert)]
 /// use std::path::PathBuf;
 ///
-/// let buffer = scribe::buffer::from_file(PathBuf::new("tests/sample/file")).unwrap();
+/// let file_path = PathBuf::from("tests/sample/file");
+/// let buffer = scribe::buffer::from_file(file_path).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
 /// # assert_eq!(buffer.cursor.line, 0);
 /// # assert_eq!(buffer.cursor.offset, 0);
