@@ -1,6 +1,5 @@
 use buffer;
 use buffer::Buffer;
-use std::old_io::IoError;
 use std::path::PathBuf;
 
 pub struct Workspace {
