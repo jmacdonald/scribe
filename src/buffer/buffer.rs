@@ -141,7 +141,7 @@ impl Buffer {
     /// // Build the buffer data string back by combining its token lexemes.
     /// let mut data = String::new();
     /// for token in buffer.tokens().iter() {
-    ///     data.push_str(token.lexeme.as_slice());
+    ///     data.push_str(&token.lexeme);
     /// }
     /// assert_eq!(data, "scribe");
     /// ```
