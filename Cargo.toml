@@ -1,11 +1,11 @@
 [package]
 
 name = "scribe"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Jordan MacDonald <jordan@wastedintelligence.com>"]
 description = "A collection of reusable components commonly required when building a text editor."
 homepage = "https://github.com/jmacdonald/scribe"
 license = "MIT"
 
 [dependencies]
-luthor = "0.0.3"
+luthor = "0.0.4"
