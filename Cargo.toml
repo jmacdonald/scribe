@@ -3,9 +3,13 @@
 name = "scribe"
 version = "0.0.5"
 authors = ["Jordan MacDonald <jordan@wastedintelligence.com>"]
-description = "A collection of reusable components commonly required when building a text editor."
+description = "Text editor toolkit."
 homepage = "https://github.com/jmacdonald/scribe"
+repository = "https://github.com/jmacdonald/scribe"
+readme = "README.md"
 license = "MIT"
+license-file = "LICENSE"
+keywords = ["gap", "buffer", "text", "editor", "document"]
 
 [dependencies]
 luthor = "0.0.4"
