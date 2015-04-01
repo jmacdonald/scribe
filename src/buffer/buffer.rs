@@ -22,10 +22,14 @@ pub struct Buffer {
     lexer: fn(&str) -> Vec<Token>,
     pub path: Option<PathBuf>,
     pub cursor: Cursor,
+    data_cache: Option<String>,
+    token_cache: Option<Vec<Token>>,
 }
 
 impl Buffer {
-    /// Returns the contents of the buffer as a string.
+    /// Returns the contents of the buffer as a string. Caches
+    /// this string representation to make subsequent requests
+    /// to an unchanged buffer as fast as possible.
     ///
     /// # Examples
     ///
@@ -34,8 +38,15 @@ impl Buffer {
     /// buffer.insert("scribe");
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
-    pub fn data(&self) -> String {
-        self.data.borrow().to_string()
+    pub fn data(&mut self) -> String {
+        match self.data_cache {
+            Some(ref cache) => cache.clone(), // Cache hit; return a copy.
+            None => {
+                // Cache miss; update the cache w/ fresh data and return a copy.
+                self.data_cache = Some(self.data.borrow().to_string());
+                self.data_cache.clone().unwrap()
+            }
+        }
     }
 
     /// Writes the contents of the buffer to its path.
@@ -65,7 +76,7 @@ impl Buffer {
     ///
     /// # std::fs::remove_file(&write_path);
     /// ```
-    pub fn save(&self) -> Option<io::Error> {
+    pub fn save(&mut self) -> Option<io::Error> {
         let path = match self.path.clone() {
             Some(p) => p,
             None => PathBuf::new(),
@@ -96,7 +107,11 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn insert(&mut self, data: &str) {
+        // Insert the data at the cursor
         self.data.borrow_mut().insert(data, &self.cursor);
+
+        // Caches are invalid as the buffer has changed.
+        self.clear_caches();
     }
 
     /// Deletes a character at the cursor position. If at the end
@@ -125,12 +140,18 @@ impl Buffer {
             end.offset = 0;
         }
 
+        // Delete the data.
         self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
+
+        // Caches are invalid as the buffer has changed.
+        self.clear_caches();
     }
 
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
-    /// buffer data's language and/or format.
+    /// buffer data's language and/or format. Caches this
+    /// lexed representation to make subsequent requests
+    /// to an unchanged buffer as fast as possible.
     ///
     /// # Examples
     ///
@@ -145,8 +166,15 @@ impl Buffer {
     /// }
     /// assert_eq!(data, "scribe data");
     /// ```
-    pub fn tokens(&self) -> Vec<Token> {
-        (self.lexer)(&self.data())
+    pub fn tokens(&mut self) -> Vec<Token> {
+        match self.token_cache {
+            Some(ref cache) => cache.clone(), // Cache hit; return a copy.
+            None => {
+                // Cache miss; update the cache w/ fresh tokens and return a copy.
+                self.token_cache = Some((self.lexer)(&self.data()));
+                self.token_cache.clone().unwrap()
+            }
+        }
     }
 
     /// Returns the file name portion of the buffer's path, if
@@ -178,6 +206,12 @@ impl Buffer {
             None => None,
         }
     }
+
+    /// Called when caches are invalidated via buffer modifications.
+    fn clear_caches(&mut self) {
+        self.data_cache = None;
+        self.token_cache = None;
+    }
 }
 
 /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
@@ -193,7 +227,14 @@ pub fn new() -> Buffer {
     let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
     let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
 
-    Buffer{ data: data.clone(), path: None, cursor: cursor, lexer: lexers::default::lex as fn(&str) -> Vec<Token> }
+    Buffer{
+        data: data.clone(),
+        path: None,
+        cursor: cursor,
+        lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
+        data_cache: None,
+        token_cache: None,
+    }
 }
 
 /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
@@ -208,7 +249,7 @@ pub fn new() -> Buffer {
 /// use std::path::PathBuf;
 ///
 /// let file_path = PathBuf::from("tests/sample/file");
-/// let buffer = scribe::buffer::from_file(file_path).unwrap();
+/// let mut buffer = scribe::buffer::from_file(file_path).unwrap();
 /// assert_eq!(buffer.data(), "it works!\n");
 /// # assert_eq!(buffer.cursor.line, 0);
 /// # assert_eq!(buffer.cursor.offset, 0);
@@ -236,7 +277,16 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
     };
 
     // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(Buffer{ data: data.clone(), path: Some(path), cursor: cursor, lexer: lexer })
+    Ok(
+        Buffer{
+            data: data.clone(),
+            path: Some(path),
+            cursor: cursor,
+            lexer: lexer,
+            data_cache: None,
+            token_cache: None,
+        }
+    )
 }
 
 #[cfg(test)]
@@ -273,5 +323,51 @@ mod tests {
         buffer.cursor.move_to_end_of_line();
         buffer.delete();
         assert_eq!(buffer.data(), "scribe\n library");
+    }
+
+    #[test]
+    fn insert_clears_data_and_token_caches() {
+        let mut buffer = new();
+        buffer.insert("scribe");
+
+        // Trigger data and token cache storage.
+        assert_eq!("scribe", buffer.data());
+        assert_eq!(
+            vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }],
+            buffer.tokens()
+        );
+
+        // Change the buffer contents using delete.
+        buffer.insert("test_");
+
+        // Ensure the cache has been busted.
+        assert_eq!("test_scribe", buffer.data());
+        assert_eq!(
+            vec![Token{ lexeme: "test_scribe".to_string(), category: Category::Text }],
+            buffer.tokens()
+        );
+    }
+
+    #[test]
+    fn delete_clears_data_and_token_caches() {
+        let mut buffer = new();
+        buffer.insert("scribe");
+
+        // Trigger data and token cache storage.
+        assert_eq!("scribe", buffer.data());
+        assert_eq!(
+            vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }],
+            buffer.tokens()
+        );
+
+        // Change the buffer contents using delete.
+        buffer.delete();
+
+        // Ensure the cache has been busted.
+        assert_eq!("cribe", buffer.data());
+        assert_eq!(
+            vec![Token{ lexeme: "cribe".to_string(), category: Category::Text }],
+            buffer.tokens()
+        );
     }
 }
