@@ -135,8 +135,8 @@ mod tests {
     use std::cell::RefCell;
 
     #[test]
-    fn move_up_goes_to_EOL_if_offset_would_be_out_of_range() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line that is longer.".to_string())));
+    fn move_up_goes_to_eol_if_offset_would_be_out_of_range() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line that is longer.".to_string())));
         let position = Position{ line: 1, offset: 20 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_up();
@@ -145,8 +145,8 @@ mod tests {
     }
 
     #[test]
-    fn move_down_goes_to_EOL_if_offset_would_be_out_of_range() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("Another line that is longer.\nThis is a test.".to_string())));
+    fn move_down_goes_to_eol_if_offset_would_be_out_of_range() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("Another line that is longer.\nThis is a test.".to_string())));
         let position = Position{ line: 0, offset: 20 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_down();
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn move_to_start_of_line_sets_offset_to_zero() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
         let position = Position{ line: 1, offset: 5 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_to_start_of_line();
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn move_to_end_of_line_sets_offset_the_line_length() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.\nAnother line.".to_string())));
         let position = Position{ line: 0, offset: 5 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_to_end_of_line();
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn move_up_does_nothing_if_at_the_start_of_line() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
         let position = Position{ line: 0, offset: 0 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_up();
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn move_left_does_nothing_if_at_the_start_of_line() {
-        let mut buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("This is a test.".to_string())));
         let position = Position{ line: 0, offset: 0 };
         let mut cursor = Cursor{ data: buffer, position: position };
         cursor.move_left();

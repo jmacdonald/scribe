@@ -2,7 +2,6 @@ extern crate luthor;
 
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::str::from_utf8;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -13,7 +12,7 @@ use super::Position;
 use super::Range;
 use super::Cursor;
 use super::type_detection;
-use self::luthor::token::{Token, Category};
+use self::luthor::token::Token;
 use self::luthor::lexers;
 
 /// A UTF-8 buffer with bounds-checked cursor management and persistence.

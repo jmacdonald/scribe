@@ -1,4 +1,3 @@
-use buffer;
 use buffer::Buffer;
 use std::path::PathBuf;
 

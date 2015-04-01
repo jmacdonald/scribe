@@ -18,7 +18,7 @@ pub struct GapBuffer {
 /// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
 /// assert_eq!(buffer.to_string(), "scribe");
 /// ```
-pub fn new(mut data: String) -> GapBuffer {
+pub fn new(data: String) -> GapBuffer {
     let mut bytes = data.into_bytes();
     let capacity = bytes.capacity();
     let gap_start = bytes.len();
