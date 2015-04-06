@@ -101,7 +101,9 @@ impl GapBuffer {
             Some(o) => o,
             None => return,
         };
-        self.gap_length=end_offset-start_offset;
+
+        // Widen the gap to cover the deleted contents.
+        self.gap_length=end_offset-self.gap_start;
     }
 
     /// Checks whether or not the specified position is in bounds of the buffer data.
@@ -289,5 +291,21 @@ mod tests {
         let end = Position{ line: 0, offset: 1 };
         gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "his is a test.");
+    }
+
+    #[test]
+    fn deleting_immediately_after_the_end_of_the_gap_widens_the_gap() {
+        let mut gb = new("This is a test.".to_string());
+        let mut start = Position{ line: 0, offset: 8 };
+        let mut end = Position{ line: 0, offset: 9 };
+        gb.delete(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "This is  test.");
+        assert_eq!(gb.gap_length, 1);
+
+        start = Position{ line: 0, offset: 9 };
+        end = Position{ line: 0, offset: 10 };
+        gb.delete(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "This is  est.");
+        assert_eq!(gb.gap_length, 2);
     }
 }
