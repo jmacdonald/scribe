@@ -53,7 +53,6 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// # #![feature(convert)]
     /// # use std::path::PathBuf;
     /// # use std::path::Path;
     /// # use std::fs::File;
@@ -182,7 +181,6 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// # #![feature(convert)]
     /// use std::path::PathBuf;
     ///
     /// let file_path = PathBuf::from("tests/sample/file");
@@ -244,7 +242,6 @@ pub fn new() -> Buffer {
 /// # Examples
 ///
 /// ```
-/// # #![feature(convert)]
 /// use std::path::PathBuf;
 ///
 /// let file_path = PathBuf::from("tests/sample/file");
