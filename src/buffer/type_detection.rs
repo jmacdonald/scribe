@@ -3,7 +3,8 @@ use std::path::Path;
 #[derive(Debug, PartialEq)]
 pub enum Type {
     JSON,
-    XML
+    XML,
+    Ruby
 }
 
 pub fn from_path(path: &Path) -> Option<Type> {
@@ -13,6 +14,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
             match extension {
                 Some("json") => Some(Type::JSON),
                 Some("xml") => Some(Type::XML),
+                Some("rb") => Some(Type::Ruby),
                 _ => None,
             }
         },

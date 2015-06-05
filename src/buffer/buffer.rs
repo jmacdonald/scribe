@@ -269,6 +269,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
     let lexer = match type_detection::from_path(&path) {
         Some(type_detection::Type::JSON) => lexers::json::lex as fn(&str) -> Vec<Token>,
         Some(type_detection::Type::XML) => lexers::xml::lex as fn(&str) -> Vec<Token>,
+        Some(type_detection::Type::Ruby) => lexers::ruby::lex as fn(&str) -> Vec<Token>,
         _ => lexers::default::lex as fn(&str) -> Vec<Token>,
     };
 
