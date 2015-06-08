@@ -22,6 +22,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use std::path::Path;
     use super::from_path;
