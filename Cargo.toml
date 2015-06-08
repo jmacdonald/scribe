@@ -7,9 +7,8 @@ description = "Text editor toolkit."
 homepage = "https://github.com/jmacdonald/scribe"
 repository = "https://github.com/jmacdonald/scribe"
 readme = "README.md"
-license = "MIT"
 license-file = "LICENSE"
 keywords = ["gap", "buffer", "text", "editor", "document"]
 
 [dependencies]
-luthor = "0.0.5"
+luthor = "0.1.1"
