@@ -17,6 +17,11 @@ impl Range {
     }
 }
 
+pub struct LineRange {
+    pub start: usize,
+    pub end:   usize,
+}
+
 #[cfg(test)]
 mod tests {
     use super::Range;
