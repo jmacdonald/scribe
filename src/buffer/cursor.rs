@@ -11,6 +11,7 @@ use super::GapBuffer;
 pub struct Cursor {
     pub data: Rc<RefCell<GapBuffer>>,
     pub position: Position,
+    sticky_offset: usize,
 }
 
 impl Deref for Cursor {
@@ -28,6 +29,7 @@ pub fn new(data: Rc<RefCell<GapBuffer>>, line: usize, offset: usize) -> Cursor {
             line: line,
             offset: offset
         },
+        sticky_offset: offset
     }
 }
 
@@ -55,6 +57,11 @@ impl Cursor {
     pub fn move_to(&mut self, position: Position) -> bool {
         if self.data.borrow().in_bounds(&position) {
             self.position = position;
+
+            // Remember this offset so that we can try
+            // to maintain it when moving across lines.
+            self.sticky_offset = position.offset;
+
             return true
         }
         false
@@ -67,7 +74,7 @@ impl Cursor {
         if self.line == 0 { return; }
 
         let target_line = self.line-1;
-        let new_position = Position{ line: target_line, offset: self.offset };
+        let new_position = Position{ line: target_line, offset: self.sticky_offset };
 
         // Try moving to the same offset on the line above, falling back to its EOL.
         if self.move_to(new_position) == false {
@@ -78,6 +85,11 @@ impl Cursor {
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
+
+            // Moving the position successfully updates the sticky offset, but we
+            // haven't actually moved to where we really wanted to go (offset-wise).
+            // Restore the original desired offset; it might be available on the next try.
+            self.sticky_offset = new_position.offset;
         }
     }
 
@@ -85,7 +97,7 @@ impl Cursor {
     /// the data and the cursor will not be updated if it is out-of-bounds.
     pub fn move_down(&mut self) {
         let target_line = self.line+1;
-        let new_position = Position{ line: target_line, offset: self.offset };
+        let new_position = Position{ line: target_line, offset: self.sticky_offset };
 
         // Try moving to the same offset on the line below, falling back to its EOL.
         if self.move_to(new_position) == false {
@@ -96,6 +108,11 @@ impl Cursor {
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
+
+            // Moving the position successfully updates the sticky offset, but we
+            // haven't actually moved to where we really wanted to go (offset-wise).
+            // Restore the original desired offset; it might be available on the next try.
+            self.sticky_offset = new_position.offset;
         }
     }
 
@@ -138,7 +155,6 @@ impl Cursor {
 
 #[cfg(test)]
 mod tests {
-    use super::Cursor;
     use super::new;
     use super::super::gap_buffer;
     use super::super::Position;
@@ -161,6 +177,42 @@ mod tests {
         cursor.move_down();
         assert_eq!(cursor.line, 1);
         assert_eq!(cursor.offset, 15);
+    }
+
+    #[test]
+    fn move_up_persists_offset_across_shorter_lines() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new(
+            "First line that is longer.\nThis is a test.\nAnother line that is longer.".to_string()
+        )));
+        let mut cursor = new(buffer, 2, 20);
+        cursor.move_up();
+        cursor.move_up();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 20);
+    }
+
+    #[test]
+    fn move_down_persists_offset_across_shorter_lines() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new(
+            "First line that is longer.\nThis is a test.\nAnother line that is longer.".to_string()
+        )));
+        let mut cursor = new(buffer, 0, 20);
+        cursor.move_down();
+        cursor.move_down();
+        assert_eq!(cursor.line, 2);
+        assert_eq!(cursor.offset, 20);
+    }
+
+    #[test]
+    fn move_to_sets_persisted_offset() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new(
+            "First line that is longer.\nThis is a test.\nAnother line that is longer.".to_string()
+        )));
+        let mut cursor = new(buffer, 0, 20);
+        cursor.move_to(Position{ line: 1, offset: 5 });
+        cursor.move_down();
+        assert_eq!(cursor.line, 2);
+        assert_eq!(cursor.offset, 5);
     }
 
     #[test]
