@@ -11,6 +11,7 @@ use super::gap_buffer;
 use super::Position;
 use super::Range;
 use super::Cursor;
+use super::cursor;
 use super::type_detection;
 use self::luthor::token::Token;
 use self::luthor::lexers;
@@ -156,7 +157,7 @@ impl Buffer {
     /// ```
     /// let mut buffer = scribe::buffer::new();
     /// buffer.insert("scribe data");
-    /// 
+    ///
     /// // Build the buffer data string back by combining its token lexemes.
     /// let mut data = String::new();
     /// for token in buffer.tokens().iter() {
@@ -222,7 +223,7 @@ impl Buffer {
 /// ```
 pub fn new() -> Buffer {
     let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
-    let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
+    let cursor = cursor::new(data.clone(), 0, 0);
 
     Buffer{
         data: data.clone(),
@@ -263,7 +264,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
     };
 
     let data = Rc::new(RefCell::new(gap_buffer::new(data)));
-    let cursor = Cursor{ data: data.clone(), position: Position{ line: 0, offset: 0 }};
+    let cursor = cursor::new(data.clone(), 0, 0);
 
     // Detect the file type and use its corresponding lexer, if available.
     let lexer = match type_detection::from_path(&path) {

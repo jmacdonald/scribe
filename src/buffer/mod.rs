@@ -13,5 +13,5 @@ mod buffer;
 pub mod gap_buffer;
 mod position;
 mod range;
-mod cursor;
+pub mod cursor;
 mod type_detection;
