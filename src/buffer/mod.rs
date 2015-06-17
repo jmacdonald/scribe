@@ -15,3 +15,4 @@ mod position;
 mod range;
 pub mod cursor;
 mod type_detection;
+mod operations;
