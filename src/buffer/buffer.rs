@@ -6,13 +6,8 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use super::GapBuffer;
-use super::gap_buffer;
-use super::Position;
-use super::Range;
-use super::Cursor;
-use super::cursor;
-use super::type_detection;
+use super::{GapBuffer, gap_buffer, Position, Range, Cursor, cursor, type_detection, operations};
+use super::operations::Operation;
 use self::luthor::token::Token;
 use self::luthor::lexers;
 
@@ -106,8 +101,9 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn insert(&mut self, data: &str) {
-        // Insert the data at the cursor
-        self.data.borrow_mut().insert(data, &self.cursor);
+        // Build and run an insert operation.
+        let mut op = operations::insert::new(data.to_string(), self.cursor.position.clone());
+        op.run(&mut *self.data.borrow_mut());
 
         // Caches are invalid as the buffer has changed.
         self.clear_caches();
