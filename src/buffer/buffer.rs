@@ -19,6 +19,7 @@ pub struct Buffer {
     pub cursor: Cursor,
     data_cache: Option<String>,
     token_cache: Option<Vec<Token>>,
+    history: Vec<Box<Operation>>,
 }
 
 impl Buffer {
@@ -104,6 +105,10 @@ impl Buffer {
         // Build and run an insert operation.
         let mut op = operations::insert::new(data.to_string(), self.cursor.position.clone());
         op.run(&mut *self.data.borrow_mut());
+
+        // Store the operation in the history
+        // object so that it can be undone.
+        self.history.push(Box::new(op));
 
         // Caches are invalid as the buffer has changed.
         self.clear_caches();
@@ -201,6 +206,45 @@ impl Buffer {
         }
     }
 
+
+    /// Reverses the last modification to the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer;
+    ///
+    /// let mut buffer = buffer::new();
+    /// // Run an initial insert operation.
+    /// buffer.insert("scribe");
+    /// buffer.cursor.move_to(buffer::Position{ line: 0, offset: 6});
+    ///
+    /// // Run a second insert operation.
+    /// buffer.insert(" library");
+    /// assert_eq!("scribe library", buffer.data());
+    ///
+    /// // Undo the second operation.
+    /// buffer.undo();
+    /// assert_eq!("scribe", buffer.data());
+    ///
+    /// // Undo the first operation.
+    /// buffer.undo();
+    /// assert_eq!("", buffer.data());
+    /// ```
+    pub fn undo(&mut self) {
+        match self.history.pop() {
+            Some(mut operation) => {
+                // Reverse the last operation.
+                operation.reverse(&mut self.data.borrow_mut());
+
+                // Reversing the operation will have modified
+                // the buffer, so we'll want to clear the cache.
+                self.clear_caches();
+            },
+            None => (),
+        }
+    }
+
     /// Called when caches are invalidated via buffer modifications.
     fn clear_caches(&mut self) {
         self.data_cache = None;
@@ -228,6 +272,7 @@ pub fn new() -> Buffer {
         lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
         data_cache: None,
         token_cache: None,
+        history: Vec::new(),
     }
 }
 
@@ -279,6 +324,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
             lexer: lexer,
             data_cache: None,
             token_cache: None,
+            history: Vec::new(),
         }
     )
 }
