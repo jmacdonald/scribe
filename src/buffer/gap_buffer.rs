@@ -62,6 +62,30 @@ impl GapBuffer {
         self.write_to_gap(data);
     }
 
+    /// Returns the specified range of data from the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let buffer = scribe::buffer::gap_buffer::new("my data".to_string());
+    /// let range = scribe::buffer::Range{ start: scribe::buffer::Position{ line: 0, offset: 3 },
+    ///   end: scribe::buffer::Position{ line: 0, offset: 7} };
+    /// assert_eq!(buffer.read(&range).unwrap(), "data");
+    /// ```
+    pub fn read(&self, range: &Range) -> Option<String> {
+        let start_offset = match self.find_offset(&range.start) {
+            Some(o) => o,
+            None => return None,
+        };
+
+        let end_offset = match self.find_offset(&range.end) {
+            Some(o) => o,
+            None => return None,
+        };
+
+        Some(from_utf8(&self.data[start_offset..end_offset]).unwrap().to_string())
+    }
+
     /// Returns a string representation of the buffer data (without gap).
     ///
     /// # Examples
@@ -114,7 +138,7 @@ impl GapBuffer {
     /// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
     /// let in_bounds = scribe::buffer::Position{ line: 0, offset: 0 };
     /// let out_of_bounds = scribe::buffer::Position{ line: 1, offset: 3 };
-    /// 
+    ///
     /// assert_eq!(buffer.in_bounds(&in_bounds), true);
     /// assert_eq!(buffer.in_bounds(&out_of_bounds), false);
     /// ```
@@ -200,7 +224,7 @@ impl GapBuffer {
                 self.data[index-self.gap_length] = self.data[index];
                 self.data[index] = 0;
             }
-            
+
             // Because the offset was after the gap, its value included the
             // gap length. We must remove it to determine the starting point.
             self.gap_start = offset - self.gap_length;
