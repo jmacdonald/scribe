@@ -140,8 +140,13 @@ impl Buffer {
             end.offset = 0;
         }
 
-        // Delete the data.
-        self.data.borrow_mut().delete(&Range{ start: *self.cursor, end: end});
+        // Build and run a delete operation.
+        let mut op = operations::delete::new(Range{ start: self.cursor.position.clone(), end: end });
+        op.run(&mut *self.data.borrow_mut());
+
+        // Store the operation in the history
+        // object so that it can be undone.
+        self.history.push(Box::new(op));
 
         // Caches are invalid as the buffer has changed.
         self.clear_caches();
@@ -332,6 +337,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
 #[cfg(test)]
 mod tests {
     use super::new;
+    use buffer::Position;
     use super::luthor::token::{Token, Category};
 
     #[test]
@@ -418,5 +424,19 @@ mod tests {
         assert_eq!("scribe", buffer.data());
         buffer.undo();
         assert_eq!("", buffer.data());
+    }
+
+    #[test]
+    fn delete_is_undoable() {
+        let mut buffer = new();
+        buffer.insert("scribe");
+        assert_eq!("scribe", buffer.data());
+
+        buffer.cursor.move_to(Position{ line: 0, offset: 0 });
+        buffer.delete();
+        assert_eq!("cribe", buffer.data());
+
+        buffer.undo();
+        assert_eq!("scribe", buffer.data());
     }
 }
