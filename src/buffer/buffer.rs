@@ -410,4 +410,13 @@ mod tests {
             buffer.tokens()
         );
     }
+
+    #[test]
+    fn insert_is_undoable() {
+        let mut buffer = new();
+        buffer.insert("scribe");
+        assert_eq!("scribe", buffer.data());
+        buffer.undo();
+        assert_eq!("", buffer.data());
+    }
 }
