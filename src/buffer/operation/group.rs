@@ -25,7 +25,7 @@ impl Operation for OperationGroup {
 
 impl OperationGroup {
     /// Adds an operation to the group.
-    fn add(&mut self, operation: Box<Operation>) {
+    pub fn add(&mut self, operation: Box<Operation>) {
         self.operations.push(operation);
     }
 }
