@@ -1,4 +1,4 @@
-use buffer::Operation;
+use buffer::operation::Operation;
 use buffer::gap_buffer::GapBuffer;
 use buffer::{Position, Range};
 
@@ -29,7 +29,7 @@ pub fn new(range: Range) -> Delete {
 mod tests {
     use super::new;
     use buffer::{Position, Range};
-    use buffer::Operation;
+    use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_remove_and_add_content_without_newlines_at_cursor_position() {

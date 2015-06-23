@@ -1,4 +1,4 @@
-use buffer::Operation;
+use buffer::operation::Operation;
 use buffer::gap_buffer::GapBuffer;
 use buffer::{Position, Range};
 
@@ -58,7 +58,7 @@ pub fn new(content: String, position: Position) -> Insert {
 mod tests {
     use super::new;
     use buffer::position::Position;
-    use buffer::Operation;
+    use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {
