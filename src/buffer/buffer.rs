@@ -21,6 +21,7 @@ pub struct Buffer {
     data_cache: Option<String>,
     token_cache: Option<Vec<Token>>,
     history: Vec<Box<Operation>>,
+    operation_group: Option<OperationGroup>,
 }
 
 impl Buffer {
@@ -109,7 +110,10 @@ impl Buffer {
 
         // Store the operation in the history
         // object so that it can be undone.
-        self.history.push(Box::new(op));
+        match self.operation_group {
+            Some(ref mut group) => group.add(Box::new(op)),
+            None => self.history.push(Box::new(op)),
+        };
 
         // Caches are invalid as the buffer has changed.
         self.clear_caches();
@@ -147,7 +151,10 @@ impl Buffer {
 
         // Store the operation in the history
         // object so that it can be undone.
-        self.history.push(Box::new(op));
+        match self.operation_group {
+            Some(ref mut group) => group.add(Box::new(op)),
+            None => self.history.push(Box::new(op)),
+        };
 
         // Caches are invalid as the buffer has changed.
         self.clear_caches();
@@ -238,15 +245,46 @@ impl Buffer {
     /// assert_eq!("", buffer.data());
     /// ```
     pub fn undo(&mut self) {
-        match self.history.pop() {
-            Some(mut operation) => {
-                // Reverse the last operation.
-                operation.reverse(&mut self.data.borrow_mut());
+        // Look for an operation to undo. First, check if there's an open operation
+        // group. If not, try taking the last operation from the buffer history.
+        let operation: Option<Box<Operation>> = match self.operation_group.take() {
+            Some(mut group) => Some(Box::new(group)),
+            None => self.history.pop(),
+        };
+
+        // If we found an eligible operation, reverse it.
+        match operation {
+            Some(mut op) => {
+                op.reverse(&mut self.data.borrow_mut());
 
                 // Reversing the operation will have modified
                 // the buffer, so we'll want to clear the cache.
                 self.clear_caches();
             },
+            None => (),
+        };
+    }
+
+    /// Tells the buffer to start tracking operations as a single unit, until
+    /// end_operation_group is called. Any calls to insert or delete occurring within
+    /// these will be undone/applied together when calling undo/redo, respectively.
+    pub fn start_operation_group(&mut self) {
+        // Create an operation group, if one doesn't already exist.
+        match self.operation_group {
+            Some(_) => (),
+            None => {
+                self.operation_group = Some(operation::group::new());
+            }
+        }
+    }
+
+    /// Tells the buffer to stop tracking operations as a single unit, since
+    /// start_operation_group was called. Any calls to insert or delete occurring within
+    /// these will be undone/applied together when calling undo/redo, respectively.
+    pub fn end_operation_group(&mut self) {
+        // Push an open operation group on to the history stack, if one exists.
+        match self.operation_group.take() {
+            Some(group) => self.history.push(Box::new(group)),
             None => (),
         }
     }
@@ -279,6 +317,7 @@ pub fn new() -> Buffer {
         data_cache: None,
         token_cache: None,
         history: Vec::new(),
+        operation_group: None,
     }
 }
 
@@ -331,6 +370,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
             data_cache: None,
             token_cache: None,
             history: Vec::new(),
+            operation_group: None,
         }
     )
 }
@@ -439,5 +479,58 @@ mod tests {
 
         buffer.undo();
         assert_eq!("scribe", buffer.data());
+    }
+
+    #[test]
+    fn correctly_called_operation_groups_are_undone_correctly() {
+        let mut buffer = new();
+
+        // Run some operations in a group.
+        buffer.start_operation_group();
+        buffer.insert("scribe");
+        buffer.cursor.move_to(Position{ line: 0, offset: 6});
+        buffer.insert(" library");
+        buffer.end_operation_group();
+
+        // Run an operation outside of the group.
+        buffer.cursor.move_to(Position{ line: 0, offset: 14});
+        buffer.insert(" test");
+
+        // Make sure the buffer looks okay.
+        assert_eq!("scribe library test", buffer.data());
+
+        // Check that undo reverses the single operation outside the group.
+        buffer.undo();
+        assert_eq!("scribe library", buffer.data());
+
+        // Check that undo reverses the group operation.
+        buffer.undo();
+        assert_eq!("", buffer.data());
+    }
+
+    #[test]
+    fn non_terminated_operation_groups_are_undone_correctly() {
+        let mut buffer = new();
+
+        // Run an operation outside of the group.
+        buffer.insert("scribe");
+
+        // Run some operations in a group, without closing it.
+        buffer.start_operation_group();
+        buffer.cursor.move_to(Position{ line: 0, offset: 6});
+        buffer.insert(" library");
+        buffer.cursor.move_to(Position{ line: 0, offset: 14});
+        buffer.insert(" test");
+
+        // Make sure the buffer looks okay.
+        assert_eq!("scribe library test", buffer.data());
+
+        // Check that undo reverses the single operation outside the group.
+        buffer.undo();
+        assert_eq!("scribe", buffer.data());
+
+        // Check that undo reverses the group operation.
+        buffer.undo();
+        assert_eq!("", buffer.data());
     }
 }
