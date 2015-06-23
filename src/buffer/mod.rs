@@ -8,6 +8,7 @@ pub use self::position::Position;
 pub use self::range::{Range, LineRange};
 pub use self::cursor::Cursor;
 pub use self::luthor::token::{Token, Category};
+pub use self::operation::Operation;
 
 mod buffer;
 pub mod gap_buffer;
@@ -15,4 +16,5 @@ mod position;
 mod range;
 pub mod cursor;
 mod type_detection;
+mod operation;
 mod operations;

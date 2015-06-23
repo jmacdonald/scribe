@@ -3,11 +3,11 @@ use buffer::GapBuffer;
 
 /// A collection of operations that are run as a single/atomic operation. Useful for
 /// composing related actions as a single event, from a history/undo standpoint.
-pub struct Group {
+pub struct OperationGroup {
     operations: Vec<Box<Operation>>,
 }
 
-impl Operation for Group {
+impl Operation for OperationGroup {
     /// Runs all of the group's individual operations, in order.
     fn run(&mut self, buffer: &mut GapBuffer) {
         for operation in &mut self.operations {
@@ -23,15 +23,15 @@ impl Operation for Group {
     }
 }
 
-impl Group {
+impl OperationGroup {
     /// Adds an operation to the group.
     fn add(&mut self, operation: Box<Operation>) {
         self.operations.push(operation);
     }
 }
 
-pub fn new() -> Group {
-    Group{ operations: Vec::new() }
+pub fn new() -> OperationGroup {
+    OperationGroup{ operations: Vec::new() }
 }
 
 #[cfg(test)]
@@ -39,7 +39,7 @@ mod tests {
     use super::new;
     use buffer::operations::insert;
     use buffer::Position;
-    use buffer::operations::Operation;
+    use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {

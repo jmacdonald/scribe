@@ -7,7 +7,7 @@ use std::io;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use super::{GapBuffer, gap_buffer, Position, Range, Cursor, cursor, type_detection, operations};
-use super::operations::Operation;
+use super::operation::Operation;
 use self::luthor::token::Token;
 use self::luthor::lexers;
 
