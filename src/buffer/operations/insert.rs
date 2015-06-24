@@ -18,7 +18,7 @@ impl Operation for Insert {
     fn reverse(&mut self, buffer: &mut GapBuffer) {
         // The line count of the content tells us the line number for the end of the
         // range (just add the number of new lines to the starting line).
-        let line_count = self.content.lines().count();
+        let line_count = self.content.chars().filter(|&c| c == '\n').count() + 1;
         let end_line = self.position.line + line_count - 1;
 
         let end_offset = if line_count == 1 {
@@ -103,5 +103,17 @@ mod tests {
         insert_operation.reverse(&mut buffer);
 
         assert_eq!(buffer.to_string(), "\n something");
+    }
+
+    #[test]
+    fn reverse_removes_a_newline() {
+        // Set up a buffer with some data.
+        let mut buffer = ::buffer::gap_buffer::new(String::new());
+        let mut insert_operation = super::new("\n".to_string(), Position{ line: 0, offset: 0 });
+        insert_operation.run(&mut buffer);
+        assert_eq!(buffer.to_string(), "\n");
+
+        insert_operation.reverse(&mut buffer);
+        assert_eq!(buffer.to_string(), "");
     }
 }
