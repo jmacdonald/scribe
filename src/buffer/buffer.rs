@@ -266,6 +266,36 @@ impl Buffer {
         };
     }
 
+    /// Re-applies the last undone modification to the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer;
+    ///
+    /// let mut buffer = buffer::new();
+    /// buffer.insert("scribe");
+    ///
+    /// buffer.undo();
+    /// assert_eq!("", buffer.data());
+    ///
+    /// buffer.redo();
+    /// assert_eq!("scribe", buffer.data());
+    /// ```
+    pub fn redo(&mut self) {
+        // Look for an operation to apply.
+        match self.history.next() {
+            Some(mut op) => {
+                op.run(&mut self.data.borrow_mut());
+
+                // Reversing the operation will have modified
+                // the buffer, so we'll want to clear the cache.
+                self.clear_caches();
+            },
+            None => (),
+        };
+    }
+
     /// Tells the buffer to start tracking operations as a single unit, until
     /// end_operation_group is called. Any calls to insert or delete occurring within
     /// these will be undone/applied together when calling undo/redo, respectively.
