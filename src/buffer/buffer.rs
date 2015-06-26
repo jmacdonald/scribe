@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use super::{GapBuffer, gap_buffer, Position, Range, Cursor, cursor, type_detection, operations};
 use buffer::operation;
 use buffer::operation::{Operation, OperationGroup};
+use buffer::operation::history::History;
 use self::luthor::token::Token;
 use self::luthor::lexers;
 
@@ -20,7 +21,7 @@ pub struct Buffer {
     pub cursor: Cursor,
     data_cache: Option<String>,
     token_cache: Option<Vec<Token>>,
-    history: Vec<Box<Operation>>,
+    history: History,
     operation_group: Option<OperationGroup>,
 }
 
@@ -112,7 +113,7 @@ impl Buffer {
         // object so that it can be undone.
         match self.operation_group {
             Some(ref mut group) => group.add(Box::new(op)),
-            None => self.history.push(Box::new(op)),
+            None => self.history.add(Box::new(op)),
         };
 
         // Caches are invalid as the buffer has changed.
@@ -153,7 +154,7 @@ impl Buffer {
         // object so that it can be undone.
         match self.operation_group {
             Some(ref mut group) => group.add(Box::new(op)),
-            None => self.history.push(Box::new(op)),
+            None => self.history.add(Box::new(op)),
         };
 
         // Caches are invalid as the buffer has changed.
@@ -249,7 +250,7 @@ impl Buffer {
         // group. If not, try taking the last operation from the buffer history.
         let operation: Option<Box<Operation>> = match self.operation_group.take() {
             Some(mut group) => Some(Box::new(group)),
-            None => self.history.pop(),
+            None => self.history.previous(),
         };
 
         // If we found an eligible operation, reverse it.
@@ -284,7 +285,7 @@ impl Buffer {
     pub fn end_operation_group(&mut self) {
         // Push an open operation group on to the history stack, if one exists.
         match self.operation_group.take() {
-            Some(group) => self.history.push(Box::new(group)),
+            Some(group) => self.history.add(Box::new(group)),
             None => (),
         }
     }
@@ -316,7 +317,7 @@ pub fn new() -> Buffer {
         lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
         data_cache: None,
         token_cache: None,
-        history: Vec::new(),
+        history: operation::history::new(),
         operation_group: None,
     }
 }
@@ -369,7 +370,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
             lexer: lexer,
             data_cache: None,
             token_cache: None,
-            history: Vec::new(),
+            history: operation::history::new(),
             operation_group: None,
         }
     )
