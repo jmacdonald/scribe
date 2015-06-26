@@ -1,7 +1,9 @@
 use buffer::operation::Operation;
 use buffer::gap_buffer::GapBuffer;
 use buffer::{Position, Range};
+use std::clone::Clone;
 
+#[derive(Clone)]
 pub struct Insert {
     content: String,
     position: Position,
@@ -47,6 +49,10 @@ impl Operation for Insert {
 
         // Remove the content we'd previously inserted.
         buffer.delete(&range);
+    }
+
+    fn clone_operation(&self) -> Box<Operation> {
+        Box::new(self.clone())
     }
 }
 

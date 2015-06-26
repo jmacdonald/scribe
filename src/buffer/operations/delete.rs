@@ -1,7 +1,9 @@
 use buffer::operation::Operation;
 use buffer::gap_buffer::GapBuffer;
 use buffer::{Position, Range};
+use std::clone::Clone;
 
+#[derive(Clone)]
 pub struct Delete {
     content: Option<String>,
     range: Range,
@@ -18,6 +20,10 @@ impl Operation for Delete {
             Some(ref content) => buffer.insert(content, &self.range.start),
             None => (),
         }
+    }
+
+    fn clone_operation(&self) -> Box<Operation> {
+        Box::new(self.clone())
     }
 }
 

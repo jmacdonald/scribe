@@ -7,5 +7,5 @@ pub mod group;
 pub trait Operation {
     fn run(&mut self, &mut GapBuffer);
     fn reverse(&mut self, &mut GapBuffer);
-    fn clone(&self) -> Box<Operation>;
+    fn clone_operation(&self) -> Box<Operation>;
 }
