@@ -16,8 +16,8 @@ impl History {
     pub fn previous(&mut self) -> Option<Box<Operation>> {
         match self.previous.pop() {
             Some(operation) => {
-                // We've found a previous operation. Before we return it, store
-                // a clone of it so that we can re-apply it as a redo operation.
+                // We've found a previous operation. Before we return it, store a
+                // clone of it so that it can be re-applied as a redo operation.
                 self.next.push(operation.clone_operation());
                 Some(operation)
             },
@@ -27,7 +27,15 @@ impl History {
 
     /// Navigate the history forwards.
     pub fn next(&mut self) -> Option<Box<Operation>> {
-        self.next.pop()
+        match self.next.pop() {
+            Some(operation) => {
+                // We've found a subsequent operation. Before we return it, store a
+                // clone of it so that it can be re-applied as an undo operation, again.
+                self.previous.push(operation.clone_operation());
+                Some(operation)
+            },
+            None => None
+        }
     }
 }
 
@@ -74,5 +82,15 @@ mod tests {
 
         // Make sure the buffer has the re-inserted content.
         assert_eq!(buffer.to_string(), "scribe");
+
+        // Pull and reverse the last history item, to make sure
+        // the next function properly sets up the previous command.
+        match history.previous() {
+            Some(mut operation) => operation.reverse(&mut buffer),
+            None => (),
+        };
+
+        // Make sure the buffer had the inserted content removed.
+        assert_eq!(buffer.to_string(), "");
     }
 }
