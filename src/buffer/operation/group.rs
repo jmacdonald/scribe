@@ -21,6 +21,14 @@ impl Operation for OperationGroup {
             operation.reverse(buffer);
         }
     }
+
+    /// Build a new operation group by manually cloning all of the groups individual operations.
+    /// We can't derive this because operations are unsized and need some hand holding.
+    fn clone_operation(&self) -> Box<Operation> {
+        Box::new(OperationGroup{
+            operations: self.operations.iter().map(|o| (*o).clone_operation()).collect()
+        })
+    }
 }
 
 impl OperationGroup {
