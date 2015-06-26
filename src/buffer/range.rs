@@ -1,5 +1,6 @@
 use super::Position;
 
+#[derive(Clone)]
 pub struct Range {
     pub start: Position,
     pub end:   Position,
