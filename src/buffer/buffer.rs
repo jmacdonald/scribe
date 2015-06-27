@@ -161,6 +161,40 @@ impl Buffer {
         self.clear_caches();
     }
 
+    /// Removes a range of characters from the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Set up an example buffer.
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe library");
+    ///
+    /// // Set up the range we'd like to delete.
+    /// let start = scribe::buffer::Position{ line: 0, offset: 6 };
+    /// let end = scribe::buffer::Position{ line: 0, offset: 14 };
+    /// let range = scribe::buffer::Range{ start: start, end: end };
+    ///
+    /// buffer.delete_range(range);
+    ///
+    /// assert_eq!(buffer.data(), "scribe");
+    /// ```
+    pub fn delete_range(&mut self, range: Range) {
+        // Build and run a delete operation.
+        let mut op = operations::delete::new(range);
+        op.run(&mut *self.data.borrow_mut());
+
+        // Store the operation in the history
+        // object so that it can be undone.
+        match self.operation_group {
+            Some(ref mut group) => group.add(Box::new(op)),
+            None => self.history.add(Box::new(op)),
+        };
+
+        // Caches are invalid as the buffer has changed.
+        self.clear_caches();
+    }
+
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
     /// buffer data's language and/or format. Caches this
