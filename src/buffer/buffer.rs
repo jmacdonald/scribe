@@ -146,19 +146,12 @@ impl Buffer {
             end.offset = 0;
         }
 
-        // Build and run a delete operation.
-        let mut op = operations::delete::new(Range{ start: self.cursor.position.clone(), end: end });
-        op.run(&mut *self.data.borrow_mut());
+        // The range we're building is going to be consumed,
+        // so create a clone of the cursor's current position.
+        let start = self.cursor.position.clone();
 
-        // Store the operation in the history
-        // object so that it can be undone.
-        match self.operation_group {
-            Some(ref mut group) => group.add(Box::new(op)),
-            None => self.history.add(Box::new(op)),
-        };
-
-        // Caches are invalid as the buffer has changed.
-        self.clear_caches();
+        // Now that we've established the range, defer.
+        self.delete_range(Range{ start: start, end: end });
     }
 
     /// Removes a range of characters from the buffer.
