@@ -1,4 +1,3 @@
-use buffer::Buffer;
 use buffer::gap_buffer::GapBuffer;
 pub use self::group::OperationGroup;
 

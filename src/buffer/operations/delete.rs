@@ -1,6 +1,6 @@
 use buffer::operation::Operation;
 use buffer::gap_buffer::GapBuffer;
-use buffer::{Position, Range};
+use buffer::Range;
 use std::clone::Clone;
 
 #[derive(Clone)]

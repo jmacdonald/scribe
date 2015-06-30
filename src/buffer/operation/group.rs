@@ -55,8 +55,8 @@ mod tests {
         let mut buffer = ::buffer::gap_buffer::new(String::new());
 
         // Push two insert operations into the group.
-        let mut first = Box::new(insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
-        let mut second = Box::new(insert::new(" else".to_string(), Position{ line: 0, offset: 9 }));
+        let first = Box::new(insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
+        let second = Box::new(insert::new(" else".to_string(), Position{ line: 0, offset: 9 }));
         group.add(first);
         group.add(second);
 

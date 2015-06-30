@@ -276,7 +276,7 @@ impl Buffer {
         // Look for an operation to undo. First, check if there's an open operation
         // group. If not, try taking the last operation from the buffer history.
         let operation: Option<Box<Operation>> = match self.operation_group.take() {
-            Some(mut group) => Some(Box::new(group)),
+            Some(group) => Some(Box::new(group)),
             None => self.history.previous(),
         };
 
