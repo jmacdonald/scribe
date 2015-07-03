@@ -1,8 +1,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 use std::cell::RefCell;
-use super::Position;
-use super::GapBuffer;
+use buffer::{Position, GapBuffer};
 
 /// Read-only wrapper for a `Position`, to allow field level access to a
 /// buffer's cursor while simultaneously enforcing bounds-checking when
@@ -156,8 +155,8 @@ impl Cursor {
 #[cfg(test)]
 mod tests {
     use super::new;
-    use super::super::gap_buffer;
-    use super::super::Position;
+    use buffer::gap_buffer;
+    use buffer::Position;
     use std::rc::Rc;
     use std::cell::RefCell;
 
