@@ -42,6 +42,32 @@ pub fn new() -> OperationGroup {
     OperationGroup{ operations: Vec::new() }
 }
 
+impl Buffer {
+    /// Tells the buffer to start tracking operations as a single unit, until
+    /// end_operation_group is called. Any calls to insert or delete occurring within
+    /// these will be undone/applied together when calling undo/redo, respectively.
+    pub fn start_operation_group(&mut self) {
+        // Create an operation group, if one doesn't already exist.
+        match self.operation_group {
+            Some(_) => (),
+            None => {
+                self.operation_group = Some(new());
+            }
+        }
+    }
+
+    /// Tells the buffer to stop tracking operations as a single unit, since
+    /// start_operation_group was called. Any calls to insert or delete occurring within
+    /// these will be undone/applied together when calling undo/redo, respectively.
+    pub fn end_operation_group(&mut self) {
+        // Push an open operation group on to the history stack, if one exists.
+        match self.operation_group.take() {
+            Some(group) => self.history.add(Box::new(group)),
+            None => (),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::new;
