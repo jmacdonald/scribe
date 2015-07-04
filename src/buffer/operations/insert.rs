@@ -1,6 +1,5 @@
 use buffer::operation::Operation;
-use buffer::gap_buffer::GapBuffer;
-use buffer::{Position, Range};
+use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 
 #[derive(Clone)]
@@ -10,14 +9,17 @@ pub struct Insert {
 }
 
 impl Operation for Insert {
-    fn run(&mut self, buffer: &mut GapBuffer) {
-        buffer.insert(&self.content, &self.position);
+    fn run(&mut self, buffer: &mut Buffer) {
+        buffer.data.borrow_mut().insert(&self.content, &self.position);
+
+        // We've modified the buffer, but it doesn't know that. Bust its cache.
+        buffer.clear_caches()
     }
 
     // We need to calculate the range of the inserted content.
     // The start of the range corresponds to the cursor position at the time of the insert,
     // which we've stored. Finding the end of the range requires that we dig into the content.
-    fn reverse(&mut self, buffer: &mut GapBuffer) {
+    fn reverse(&mut self, buffer: &mut Buffer) {
         // The line count of the content tells us the line number for the end of the
         // range (just add the number of new lines to the starting line).
         let line_count = self.content.chars().filter(|&c| c == '\n').count() + 1;
@@ -48,7 +50,10 @@ impl Operation for Insert {
         };
 
         // Remove the content we'd previously inserted.
-        buffer.delete(&range);
+        buffer.data.borrow_mut().delete(&range);
+
+        // We've modified the buffer, but it doesn't know that. Bust its cache.
+        buffer.clear_caches()
     }
 
     fn clone_operation(&self) -> Box<Operation> {
@@ -69,9 +74,8 @@ mod tests {
     #[test]
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::gap_buffer::new(String::new());
-        let start_position = Position{ line: 0, offset: 0 };
-        buffer.insert(&"something", &start_position);
+        let mut buffer = ::buffer::new();
+        buffer.insert(&"something");
 
         // Set up a position pointing to the end of the buffer's contents.
         let insert_position = Position{ line: 0, offset: 9 };
@@ -80,19 +84,18 @@ mod tests {
         let mut insert_operation = super::new(" else".to_string(), insert_position);
         insert_operation.run(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "something else");
+        assert_eq!(buffer.data(), "something else");
 
         insert_operation.reverse(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "something");
+        assert_eq!(buffer.data(), "something");
     }
 
     #[test]
     fn run_and_reverse_add_and_remove_content_with_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::gap_buffer::new(String::new());
-        let start_position = Position{ line: 0, offset: 0 };
-        buffer.insert(&"\n something", &start_position);
+        let mut buffer = ::buffer::new();
+        buffer.insert(&"\n something");
 
         // Set up a position pointing to the end of the buffer's contents.
         let insert_position = Position{ line: 1, offset: 10 };
@@ -104,22 +107,22 @@ mod tests {
         let mut insert_operation = super::new("\n else\n entirely".to_string(), insert_position);
         insert_operation.run(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "\n something\n else\n entirely");
+        assert_eq!(buffer.data(), "\n something\n else\n entirely");
 
         insert_operation.reverse(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "\n something");
+        assert_eq!(buffer.data(), "\n something");
     }
 
     #[test]
     fn reverse_removes_a_newline() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::gap_buffer::new(String::new());
+        let mut buffer = ::buffer::new();
         let mut insert_operation = super::new("\n".to_string(), Position{ line: 0, offset: 0 });
         insert_operation.run(&mut buffer);
-        assert_eq!(buffer.to_string(), "\n");
+        assert_eq!(buffer.data(), "\n");
 
         insert_operation.reverse(&mut buffer);
-        assert_eq!(buffer.to_string(), "");
+        assert_eq!(buffer.data(), "");
     }
 }

@@ -121,7 +121,7 @@ impl Buffer {
     pub fn insert(&mut self, data: &str) {
         // Build and run an insert operation.
         let mut op = operations::insert::new(data.to_string(), self.cursor.position.clone());
-        op.run(&mut *self.data.borrow_mut());
+        op.run(self);
 
         // Store the operation in the history
         // object so that it can be undone.
@@ -189,7 +189,7 @@ impl Buffer {
     pub fn delete_range(&mut self, range: Range) {
         // Build and run a delete operation.
         let mut op = operations::delete::new(range);
-        op.run(&mut *self.data.borrow_mut());
+        op.run(self);
 
         // Store the operation in the history
         // object so that it can be undone.
@@ -297,7 +297,7 @@ impl Buffer {
         // If we found an eligible operation, reverse it.
         match operation {
             Some(mut op) => {
-                op.reverse(&mut self.data.borrow_mut());
+                op.reverse(self);
 
                 // Reversing the operation will have modified
                 // the buffer, so we'll want to clear the cache.
@@ -327,7 +327,7 @@ impl Buffer {
         // Look for an operation to apply.
         match self.history.next() {
             Some(mut op) => {
-                op.run(&mut self.data.borrow_mut());
+                op.run(self);
 
                 // Reversing the operation will have modified
                 // the buffer, so we'll want to clear the cache.

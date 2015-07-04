@@ -46,7 +46,7 @@ pub fn new() -> History {
 #[cfg(test)]
 mod tests {
     use super::new;
-    use buffer::{gap_buffer, Position, operations};
+    use buffer::{Position, operations};
     use buffer::operation::Operation;
 
     #[test]
@@ -54,7 +54,7 @@ mod tests {
         let mut history = new();
 
         // Set up a buffer with some data.
-        let mut buffer = gap_buffer::new(String::new());
+        let mut buffer = ::buffer::new();
 
         // Run an insert operation and add it to the history.
         let insert_position = Position{ line: 0, offset: 0 };
@@ -63,7 +63,7 @@ mod tests {
         history.add(Box::new(insert_operation));
 
         // Make sure the buffer has the inserted content.
-        assert_eq!(buffer.to_string(), "scribe");
+        assert_eq!(buffer.data(), "scribe");
 
         // Pull and reverse the last history item.
         match history.previous() {
@@ -72,7 +72,7 @@ mod tests {
         };
 
         // Make sure the buffer had the inserted content removed.
-        assert_eq!(buffer.to_string(), "");
+        assert_eq!(buffer.data(), "");
 
         // Pull and run the next history item.
         match history.next() {
@@ -81,7 +81,7 @@ mod tests {
         };
 
         // Make sure the buffer has the re-inserted content.
-        assert_eq!(buffer.to_string(), "scribe");
+        assert_eq!(buffer.data(), "scribe");
 
         // Pull and reverse the last history item, to make sure
         // the next function properly sets up the previous command.
@@ -91,6 +91,6 @@ mod tests {
         };
 
         // Make sure the buffer had the inserted content removed.
-        assert_eq!(buffer.to_string(), "");
+        assert_eq!(buffer.data(), "");
     }
 }

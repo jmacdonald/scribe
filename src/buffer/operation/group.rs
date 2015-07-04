@@ -1,5 +1,5 @@
 use super::Operation;
-use buffer::GapBuffer;
+use buffer::Buffer;
 
 /// A collection of operations that are run as a single/atomic operation. Useful for
 /// composing related actions as a single event, from a history/undo standpoint.
@@ -9,14 +9,14 @@ pub struct OperationGroup {
 
 impl Operation for OperationGroup {
     /// Runs all of the group's individual operations, in order.
-    fn run(&mut self, buffer: &mut GapBuffer) {
+    fn run(&mut self, buffer: &mut Buffer) {
         for operation in &mut self.operations {
             operation.run(buffer);
         }
     }
 
     /// Reverses all of the group's individual operations, in reverse order.
-    fn reverse(&mut self, buffer: &mut GapBuffer) {
+    fn reverse(&mut self, buffer: &mut Buffer) {
         for operation in &mut self.operations.iter_mut().rev() {
             operation.reverse(buffer);
         }
@@ -52,7 +52,7 @@ mod tests {
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {
         let mut group = new();
-        let mut buffer = ::buffer::gap_buffer::new(String::new());
+        let mut buffer = ::buffer::new();
 
         // Push two insert operations into the group.
         let first = Box::new(insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
@@ -63,11 +63,11 @@ mod tests {
         // Run the operation group.
         group.run(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "something else");
+        assert_eq!(buffer.data(), "something else");
 
         // Reverse the operation group.
         group.reverse(&mut buffer);
 
-        assert_eq!(buffer.to_string(), "");
+        assert_eq!(buffer.data(), "");
     }
 }
