@@ -1,5 +1,5 @@
 use buffer::operation::Operation;
-use buffer::{Buffer, Range};
+use buffer::{Buffer, Range, Position};
 use std::clone::Clone;
 
 #[derive(Clone)]
@@ -39,6 +39,76 @@ impl Operation for Delete {
 
 pub fn new(range: Range) -> Delete {
     Delete{ content: None, range: range }
+}
+
+impl Buffer {
+    /// Deletes a character at the cursor position. If at the end
+    /// of the current line, it'll try to delete a newline character
+    /// (joining the lines), succeeding if there's a line below.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// buffer.delete();
+    /// assert_eq!(buffer.data(), "cribe");
+    /// ```
+    pub fn delete(&mut self) {
+        // We need to specify a range to delete, so start at
+        // the current offset and delete the character to the right.
+        let mut end = Position{ line: self.cursor.line, offset: self.cursor.offset + 1 };
+
+        // If there isn't a character to the right,
+        // delete the newline by jumping to the start
+        // of the next line. If it doesn't exist, that's okay;
+        // these values are bounds-checked by delete() anyway.
+        if !self.data.borrow().in_bounds(&end) {
+            end.line += 1;
+            end.offset = 0;
+        }
+
+        // The range we're building is going to be consumed,
+        // so create a clone of the cursor's current position.
+        let start = self.cursor.position.clone();
+
+        // Now that we've established the range, defer.
+        self.delete_range(Range{ start: start, end: end });
+    }
+
+    /// Removes a range of characters from the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Set up an example buffer.
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe library");
+    ///
+    /// // Set up the range we'd like to delete.
+    /// let start = scribe::buffer::Position{ line: 0, offset: 6 };
+    /// let end = scribe::buffer::Position{ line: 0, offset: 14 };
+    /// let range = scribe::buffer::Range{ start: start, end: end };
+    ///
+    /// buffer.delete_range(range);
+    ///
+    /// assert_eq!(buffer.data(), "scribe");
+    /// ```
+    pub fn delete_range(&mut self, range: Range) {
+        // Build and run a delete operation.
+        let mut op = new(range);
+        op.run(self);
+
+        // Store the operation in the history
+        // object so that it can be undone.
+        match self.operation_group {
+            Some(ref mut group) => group.add(Box::new(op)),
+            None => self.history.add(Box::new(op)),
+        };
+
+        // Caches are invalid as the buffer has changed.
+        self.clear_caches();
+    }
 }
 
 #[cfg(test)]

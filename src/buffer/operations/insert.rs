@@ -65,6 +65,33 @@ pub fn new(content: String, position: Position) -> Insert {
     Insert{ content: content, position: position }
 }
 
+impl Buffer {
+    /// Inserts `data` into the buffer at the cursor position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buffer = scribe::buffer::new();
+    /// buffer.insert("scribe");
+    /// assert_eq!(buffer.data(), "scribe");
+    /// ```
+    pub fn insert(&mut self, data: &str) {
+        // Build and run an insert operation.
+        let mut op = new(data.to_string(), self.cursor.position.clone());
+        op.run(self);
+
+        // Store the operation in the history
+        // object so that it can be undone.
+        match self.operation_group {
+            Some(ref mut group) => group.add(Box::new(op)),
+            None => self.history.add(Box::new(op)),
+        };
+
+        // Caches are invalid as the buffer has changed.
+        self.clear_caches();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::new;
