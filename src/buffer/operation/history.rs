@@ -10,6 +10,7 @@ impl History {
     /// Store an operation that has already been run.
     pub fn add(&mut self, operation: Box<Operation>) {
         self.previous.push(operation);
+        self.next.clear();
     }
 
     /// Navigate the history backwards.
@@ -92,5 +93,26 @@ mod tests {
 
         // Make sure the buffer had the inserted content removed.
         assert_eq!(buffer.data(), "");
+    }
+
+    #[test]
+    fn adding_a_new_operation_clears_redo_stack() {
+        let mut history = new();
+
+        // Add an insert operation to the history.
+        let insert_position = Position{ line: 0, offset: 0 };
+        let mut insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        // Pull the last history item. This will
+        // add the operation to the redo stack.
+        assert!(history.previous().is_some());
+
+        // Add another insert operation to the history.
+        let mut second_insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(second_insert_operation));
+
+        // Ensure there are no redo items.
+        assert!(history.next().is_none());
     }
 }
