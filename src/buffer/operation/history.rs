@@ -1,6 +1,10 @@
 use buffer::operation::Operation;
 
-/// Tracks a series of operations, which can be traversed backwards and forwards.
+/// Tracks a series of operations.
+///
+/// Represents a linear history that can be traversed backwards and forwards.
+/// Adding a new operation to the history will clear any previously reversed
+/// operations, which would otherwise have been eligible to be redone.
 pub struct History {
     previous: Vec<Box<Operation>>,
     next: Vec<Box<Operation>>,

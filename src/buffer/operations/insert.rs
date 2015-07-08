@@ -2,6 +2,11 @@ use buffer::operation::Operation;
 use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 
+/// A reversible buffer insert operation.
+///
+/// Inserts the provided content at the specified position. Tracks both, and reverses
+/// the operation by calculating the content's start and end positions (range), relative
+/// to its inserted location, and removing said range from the underlying buffer.
 #[derive(Clone)]
 pub struct Insert {
     content: String,

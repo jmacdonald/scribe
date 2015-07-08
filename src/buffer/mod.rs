@@ -27,7 +27,11 @@ use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
 use self::luthor::lexers;
 
-/// A UTF-8 buffer with bounds-checked cursor management and persistence.
+/// A feature-rich wrapper around an underlying gap buffer.
+///
+/// The buffer type wraps an in-memory buffer, providing file I/O, a bounds-checked moveable
+/// cursor, undo/redo history, simple type/format detection, and lexing (producing categorized
+/// tokens suitable for syntax-highlighted display).
 pub struct Buffer {
     data: Rc<RefCell<GapBuffer>>,
     lexer: fn(&str) -> Vec<Token>,

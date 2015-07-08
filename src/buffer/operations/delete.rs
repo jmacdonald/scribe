@@ -2,6 +2,11 @@ use buffer::operation::Operation;
 use buffer::{Buffer, Range, Position};
 use std::clone::Clone;
 
+/// A reversible buffer delete operation.
+///
+/// Deletes the content at the specified range. Tracks the deleted content and specified
+/// range, and reverses the operation by (trivially) inserting the deleted content at
+/// the start of the specified range.
 #[derive(Clone)]
 pub struct Delete {
     content: Option<String>,

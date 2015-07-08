@@ -1,8 +1,16 @@
 use super::Operation;
 use buffer::Buffer;
 
-/// A collection of operations that are run as a single/atomic operation. Useful for
-/// composing related actions as a single event, from a history/undo standpoint.
+/// A collection of operations run as a single/atomic operation.
+///
+/// Useful for composing smaller, related actions into a larger action, from a history/undo
+/// standpoint. A common example of this is character-by-character insertions, which can
+/// be undone as a whole, or word by word, instead of one character at a time.
+///
+/// Because this type implements the Operation trait, it can be placed into the history like
+/// any other operation. It's a simple grouping type; it relies on its constituent operations
+/// to handle all of their undo/redo implementation details. It exposes two methods on the
+/// buffer type to signal the start and end of a group.
 pub struct OperationGroup {
     operations: Vec<Box<Operation>>,
 }
