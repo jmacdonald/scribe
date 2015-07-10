@@ -105,7 +105,7 @@ mod tests {
 
         // Add an insert operation to the history.
         let insert_position = Position{ line: 0, offset: 0 };
-        let mut insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        let insert_operation = operations::insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
         // Pull the last history item. This will
@@ -113,7 +113,7 @@ mod tests {
         assert!(history.previous().is_some());
 
         // Add another insert operation to the history.
-        let mut second_insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        let second_insert_operation = operations::insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(second_insert_operation));
 
         // Ensure there are no redo items.
