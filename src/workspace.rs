@@ -2,7 +2,7 @@ use buffer::Buffer;
 use std::path::PathBuf;
 
 pub struct Workspace {
-    path: PathBuf,
+    pub path: PathBuf,
     buffers: Vec<Buffer>,
     current_buffer_index: Option<usize>,
 }
