@@ -1,4 +1,4 @@
-use super::Position;
+use buffer::Position;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range {
@@ -20,8 +20,7 @@ impl Range {
 
 #[cfg(test)]
 mod tests {
-    use super::Range;
-    use super::super::Position;
+    use buffer::{Position, Range};
 
     #[test]
     fn range_is_valid_when_start_is_before_end() {
