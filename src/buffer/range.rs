@@ -1,6 +1,6 @@
 use super::Position;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Range {
     pub start: Position,
     pub end:   Position,
@@ -16,11 +16,6 @@ impl Range {
             false
         }
     }
-}
-
-pub struct LineRange {
-    pub start: usize,
-    pub end:   usize,
 }
 
 #[cfg(test)]
