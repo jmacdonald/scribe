@@ -1,11 +1,12 @@
 [package]
 
 name = "scribe"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Jordan MacDonald <jordan@wastedintelligence.com>"]
 description = "Text editor toolkit."
 homepage = "https://github.com/jmacdonald/scribe"
 repository = "https://github.com/jmacdonald/scribe"
+documentation = "http://jordanmacdonald.ca/rust/scribe"
 readme = "README.md"
 license-file = "LICENSE"
 keywords = ["gap", "buffer", "text", "editor", "document"]
