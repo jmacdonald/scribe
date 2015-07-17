@@ -271,7 +271,7 @@ impl Buffer {
 /// ```
 pub fn new() -> Buffer {
     let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
-    let cursor = cursor::new(data.clone(), 0, 0);
+    let cursor = cursor::new(data.clone(), Position{ line: 0, offset: 0 });
 
     Buffer{
         data: data.clone(),
@@ -314,7 +314,7 @@ pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
     };
 
     let data = Rc::new(RefCell::new(gap_buffer::new(data)));
-    let cursor = cursor::new(data.clone(), 0, 0);
+    let cursor = cursor::new(data.clone(), Position{ line: 0, offset: 0 });
 
     // Detect the file type and use its corresponding lexer, if available.
     let lexer = match type_detection::from_path(&path) {
