@@ -1,3 +1,4 @@
+//! Bounds-checked buffer cursor type.
 use std::ops::Deref;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -21,6 +22,7 @@ impl Deref for Cursor {
     }
 }
 
+/// Initializes a cursor bound to the specified gap buffer, at the specified position.
 pub fn new(data: Rc<RefCell<GapBuffer>>, line: usize, offset: usize) -> Cursor {
     Cursor{
         data: data,

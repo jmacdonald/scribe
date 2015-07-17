@@ -1,5 +1,6 @@
 use buffer::Position;
 
+/// A two-position type, representing a span of characters.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range {
     pub start: Position,
@@ -7,6 +8,7 @@ pub struct Range {
 }
 
 impl Range {
+    /// Checks if the range is non-reversed and non-empty.
     pub fn is_valid(&self) -> bool {
         if self.start.line < self.end.line {
             true

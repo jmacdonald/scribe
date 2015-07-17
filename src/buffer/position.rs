@@ -1,5 +1,9 @@
 use std::cmp::{PartialOrd, Ordering};
 
+/// A two (zero-based) coordinate value representing a location in a buffer.
+/// The `offset` field is so named to emphasize that positions point to
+/// locations before/after characters, not characters themselves, in an effort
+/// to avoid fencepost errors.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Position {
     pub line:   usize,

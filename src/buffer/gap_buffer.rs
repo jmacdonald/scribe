@@ -1,3 +1,5 @@
+//! Buffer type's underlying data structure.
+
 use super::Position;
 use super::Range;
 use std::str::from_utf8;
