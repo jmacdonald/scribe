@@ -245,8 +245,8 @@ impl GapBuffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::Position;
-    use super::super::Range;
+    use buffer::Position;
+    use buffer::Range;
 
     #[test]
     fn move_gap_works() {
