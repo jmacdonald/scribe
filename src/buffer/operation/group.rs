@@ -70,7 +70,11 @@ impl Buffer {
     pub fn end_operation_group(&mut self) {
         // Push an open operation group on to the history stack, if one exists.
         match self.operation_group.take() {
-            Some(group) => self.history.add(Box::new(group)),
+            Some(group) => {
+                if !group.operations.is_empty() {
+                    self.history.add(Box::new(group))
+                }
+            },
             None => (),
         }
     }
@@ -102,6 +106,22 @@ mod tests {
         // Reverse the operation group.
         group.reverse(&mut buffer);
 
+        assert_eq!(buffer.data(), "");
+    }
+
+    #[test]
+    fn end_operation_group_drops_group_if_empty() {
+        let mut buffer = ::buffer::new();
+        buffer.insert("amp");
+
+        // Create an empty operation group that
+        // shouldn't be added to the buffer history.
+        buffer.start_operation_group();
+        buffer.end_operation_group();
+
+        // Undo the last change, which should be the initial
+        // insert, if the empty operation group was ignored.
+        buffer.undo();
         assert_eq!(buffer.data(), "");
     }
 }
