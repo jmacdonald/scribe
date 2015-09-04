@@ -203,10 +203,16 @@ impl Buffer {
     /// assert_eq!("", buffer.data());
     /// ```
     pub fn undo(&mut self) {
-        // Look for an operation to undo. First, check if there's an open operation
-        // group. If not, try taking the last operation from the buffer history.
+        // Look for an operation to undo. First, check if there's an open, non-empty
+        // operation group. If not, try taking the last operation from the buffer history.
         let operation: Option<Box<Operation>> = match self.operation_group.take() {
-            Some(group) => Some(Box::new(group)),
+            Some(group) => {
+                if group.is_empty() {
+                    self.history.previous()
+                } else {
+                    Some(Box::new(group))
+                }
+            }
             None => self.history.previous(),
         };
 
@@ -496,5 +502,21 @@ mod tests {
         // Check that undo reverses the group operation.
         buffer.undo();
         assert_eq!("", buffer.data());
+    }
+
+    #[test]
+    fn non_terminated_empty_operation_groups_are_dropped() {
+        let mut buffer = new();
+
+        // Run an operation outside of the group.
+        buffer.insert("scribe");
+
+        // Start an empty operation group.
+        buffer.start_operation_group();
+
+        // Check that undo drops the empty operation group
+        // and undoes the previous operation.
+        buffer.undo();
+        assert_eq!(buffer.data(), "");
     }
 }

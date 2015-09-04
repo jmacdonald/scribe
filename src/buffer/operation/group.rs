@@ -44,6 +44,11 @@ impl OperationGroup {
     pub fn add(&mut self, operation: Box<Operation>) {
         self.operations.push(operation);
     }
+
+    /// Whether or not the group contains any operations.
+    pub fn is_empty(&self) -> bool {
+        self.operations.is_empty()
+    }
 }
 
 pub fn new() -> OperationGroup {
@@ -71,7 +76,7 @@ impl Buffer {
         // Push an open operation group on to the history stack, if one exists.
         match self.operation_group.take() {
             Some(group) => {
-                if !group.operations.is_empty() {
+                if !group.is_empty() {
                     self.history.add(Box::new(group))
                 }
             },
