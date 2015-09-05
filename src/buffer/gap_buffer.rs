@@ -46,8 +46,17 @@ impl GapBuffer {
     pub fn insert(&mut self, data: &str, position: &Position) {
         // Ensure we have the capacity to insert this data.
         if data.len() > self.gap_length {
-            // TODO: Move gap to the end before resizing buffer.
+            // We're about to add space to the end of the buffer, so move the gap
+            // there beforehand so that we're essentially just increasing the
+            // gap size, and preventing a split/two-segment gap.
+            let offset = self.data.capacity() - self.gap_length;
+            self.move_gap(offset);
+
+            // Re-allocate the gap buffer, increasing its size.
             self.data.reserve(data.len());
+
+            // Update the tracked gap size and tell the vector that
+            // we're using all of the new space immediately.
             let capacity = self.data.capacity();
             self.gap_length = capacity - self.gap_start;
             unsafe {
@@ -257,9 +266,17 @@ mod tests {
 
     #[test]
     fn inserting_at_the_start_works() {
-        let mut gb = new("This is a test.".to_string());
-        gb.insert("Hi. ", &Position { line: 0, offset: 0 });
-        assert_eq!(gb.to_string(), "Hi. This is a test.");
+        let mut gb = new("toolkit".to_string());
+
+        // This insert serves to move the gap to the start of the buffer.
+        gb.insert(" ", &Position { line: 0, offset: 0 });
+        assert_eq!(gb.to_string(), " toolkit");
+
+        // We insert enough data (more than twice original capacity) to force
+        // a re-allocation, which, with the gap at the start and when handled
+        // incorrectly, will create a split/two-segment gap. Bad news.
+        gb.insert("scribe text", &Position { line: 0, offset: 0 });
+        assert_eq!(gb.to_string(), "scribe text toolkit");
     }
 
     #[test]
