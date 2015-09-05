@@ -49,7 +49,7 @@ impl GapBuffer {
             // We're about to add space to the end of the buffer, so move the gap
             // there beforehand so that we're essentially just increasing the
             // gap size, and preventing a split/two-segment gap.
-            let offset = self.data.capacity() - self.gap_length;
+            let offset = self.data.capacity();
             self.move_gap(offset);
 
             // Re-allocate the gap buffer, increasing its size.
@@ -281,9 +281,14 @@ mod tests {
 
     #[test]
     fn inserting_in_the_middle_works() {
-        let mut gb = new("This is a test.\nPlease be gentle.".to_string());
-        gb.insert(" very", &Position { line: 1, offset: 9 });
-        assert_eq!(gb.to_string(), "This is a test.\nPlease be very gentle.");
+        let mut gb = new("    editor".to_string());
+
+        // Same deal as above "at the start" test, where we want to move
+        // the gap into the middle and then force a reallocation to check
+        // that pre-allocation gap shifting is working correctly.
+        gb.insert(" ", &Position { line: 0, offset: 4 });
+        gb.insert("scribe", &Position { line: 0, offset: 4 });
+        assert_eq!(gb.to_string(), "    scribe editor");
     }
 
     #[test]
