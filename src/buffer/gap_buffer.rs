@@ -140,13 +140,30 @@ impl GapBuffer {
         };
         self.move_gap(start_offset);
 
-        let end_offset = match self.find_offset(&range.end) {
-            Some(o) => o,
-            None => return,
-        };
+        match self.find_offset(&range.end) {
+            Some(offset) => {
+                // Widen the gap to cover the deleted contents.
+                self.gap_length = offset - self.gap_start;
+            },
+            None => {
+                // The end of the range doesn't exist; check
+                // if it's on the last line in the file.
+                let start_of_next_line = Position{ line: range.end.line + 1, offset: 0 };
 
-        // Widen the gap to cover the deleted contents.
-        self.gap_length=end_offset-self.gap_start;
+                match self.find_offset(&start_of_next_line) {
+                    Some(offset) => {
+                        // There are other lines below this range.
+                        // Just remove up until the end of the line.
+                        self.gap_length = offset - self.gap_start;
+                    },
+                    None => {
+                        // We're on the last line, just get rid of the rest
+                        // by extending the gap right to the end of the buffer.
+                        self.gap_length = self.data.len() - self.gap_start;
+                    }
+                }
+            }
+        };
     }
 
     /// Checks whether or not the specified position is in bounds of the buffer data.
@@ -363,6 +380,24 @@ mod tests {
         gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "This is  est.");
         assert_eq!(gb.gap_length, 2);
+    }
+
+    #[test]
+    fn deleting_to_an_out_of_range_line_deletes_to_the_end_of_the_buffer() {
+        let mut gb = new("scribe\nlibrary".to_string());
+        let start = Position{ line: 0, offset: 6 };
+        let end = Position{ line: 2, offset: 10 };
+        gb.delete(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "scribe");
+    }
+
+    #[test]
+    fn deleting_to_an_out_of_range_column_deletes_to_the_end_of_the_buffer() {
+        let mut gb = new("scribe\nlibrary".to_string());
+        let start = Position{ line: 0, offset: 0 };
+        let end = Position{ line: 0, offset: 100 };
+        gb.delete(&Range{ start: start, end: end });
+        assert_eq!(gb.to_string(), "library");
     }
 
     #[test]
