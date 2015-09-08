@@ -1,3 +1,10 @@
+### 0.2.6
+
+* Fixed an issue where reading from a gap buffer when the gap is at the start
+  of the requested range would return the content prefixed with the gap contents.
+* Updated gap buffers to gracefully handle delete ranges that extend beyond a
+  line's last column or the end of the document.
+
 ### 0.2.5
 
 * Fixed target gap offset resolution introduced in v0.2.4, which did not handle
