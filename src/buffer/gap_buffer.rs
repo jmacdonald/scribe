@@ -85,7 +85,15 @@ impl GapBuffer {
     /// ```
     pub fn read(&self, range: &Range) -> Option<String> {
         let start_offset = match self.find_offset(&range.start) {
-            Some(o) => o,
+            Some(offset) => {
+                // If the gap is at the position we're looking for, skip over it, as
+                // we don't want to include the gap contents in what we're reading.
+                if offset == self.gap_start {
+                    offset + self.gap_length
+                } else {
+                    offset
+                }
+            },
             None => return None,
         };
 
@@ -355,5 +363,23 @@ mod tests {
         gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "This is  est.");
         assert_eq!(gb.gap_length, 2);
+    }
+
+    #[test]
+    fn read_does_not_include_gap_contents_when_gap_is_at_start_of_range() {
+        // Create a buffer and a range that captures the first character.
+        let mut gb = new("scribe".to_string());
+        let range = Range{
+            start: Position{ line: 0, offset: 0 },
+            end: Position{ line: 0, offset: 1 }
+        };
+
+        // Delete the first character, which will move the gap buffer to the start.
+        gb.delete(&range);
+        assert_eq!(gb.to_string(), "cribe");
+
+        // Ask for the first character, which would include the deleted
+        // value, if the read function isn't smart enough to skip it.
+        assert_eq!(gb.read(&range).unwrap(), "c");
     }
 }
