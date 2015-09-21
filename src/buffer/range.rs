@@ -7,59 +7,44 @@ pub struct Range {
     pub end:   Position,
 }
 
-impl Range {
-    /// Checks if the range is non-reversed and non-empty.
-    pub fn is_valid(&self) -> bool {
-        if self.start.line < self.end.line {
-            true
-        } else if self.start.line == self.end.line && self.start.offset < self.end.offset {
-            true
-        } else {
-            false
-        }
+pub fn new(start: Position, end: Position) -> Range {
+    // Ensure that the end does not precede the start.
+    if start > end {
+        Range{ start: end, end: start }
+    } else {
+        Range{ start: start, end: end }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use buffer::{Position, Range};
+    use buffer::Position;
+    use super::new;
 
     #[test]
-    fn range_is_valid_when_start_is_before_end() {
+    fn new_does_not_swap_values_if_end_does_not_precede_start() {
         let mut start = Position { line: 0, offset: 4 };
         let mut end = Position { line: 1, offset: 1 };
-        let mut range = Range { start: start, end: end };
+        let mut range = new(start, end);
 
-        assert!(range.is_valid());
+        assert_eq!(range.start, start);
+        assert_eq!(range.end, end);
 
-        start = Position { line: 1, offset: 4 };
-        end = Position { line: 1, offset: 5 };
-        range = Range { start: start, end: end };
+        start = Position { line: 0, offset: 4 };
+        end = Position { line: 0, offset: 4 };
+        range = new(start, end);
 
-        assert!(range.is_valid());
+        assert_eq!(range.start, start);
+        assert_eq!(range.end, end);
     }
 
     #[test]
-    fn range_is_invalid_when_start_is_equal_to_end() {
-        let start = Position { line: 0, offset: 4 };
-        let end = Position { line: 0, offset: 4 };
-        let range = Range { start: start, end: end };
+    fn new_swaps_start_and_end_when_end_precedes_start() {
+        let start = Position { line: 1, offset: 4 };
+        let end = Position { line: 1, offset: 1 };
+        let range = new(start, end);
 
-        assert!(!range.is_valid());
-    }
-
-    #[test]
-    fn range_is_invalid_when_start_is_after_end() {
-        let mut start = Position { line: 1, offset: 4 };
-        let mut end = Position { line: 1, offset: 1 };
-        let mut range = Range { start: start, end: end };
-
-        assert!(!range.is_valid());
-
-        start = Position { line: 2, offset: 4 };
-        end = Position { line: 1, offset: 5 };
-        range = Range { start: start, end: end };
-
-        assert!(!range.is_valid());
+        assert_eq!(range.start, end);
+        assert_eq!(range.end, start);
     }
 }

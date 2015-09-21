@@ -129,11 +129,6 @@ impl GapBuffer {
     /// assert_eq!(buffer.to_string(), "data");
     /// ```
     pub fn delete(&mut self, range: &Range) {
-        // Don't even bother if the range is invalid.
-        if !range.is_valid() {
-            return;
-        }
-
         let start_offset = match self.find_offset(&range.start) {
             Some(o) => o,
             None => return,
@@ -345,15 +340,6 @@ mod tests {
         let end = Position{ line: 1, offset: 4 };
         gb.delete(&Range{ start: start, end: end });
         assert_eq!(gb.to_string(), "This is what happens.");
-    }
-
-    #[test]
-    fn deleting_with_a_reversed_range_does_nothing() {
-        let mut gb = new("This is a test.".to_string());
-        let start = Position{ line: 0, offset: 10 };
-        let end = Position{ line: 0, offset: 0 };
-        gb.delete(&Range{ start: start, end: end });
-        assert_eq!(gb.to_string(), "This is a test.");
     }
 
     #[test]
