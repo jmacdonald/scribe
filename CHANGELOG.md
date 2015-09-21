@@ -1,3 +1,9 @@
+### 0.2.7
+
+* Removed is_valid method from Range type.
+* Privatized Range type fields, added a constructor, as well as accessor methods.
+  This is to guarantee that start and end fields are in the correct order.
+
 ### 0.2.6
 
 * Fixed an issue where reading from a gap buffer when the gap is at the start
