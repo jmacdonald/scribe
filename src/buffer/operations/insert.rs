@@ -1,5 +1,5 @@
 use buffer::operation::Operation;
-use buffer::{Buffer, Position, Range};
+use buffer::{Buffer, Position, range};
 use std::clone::Clone;
 
 /// A reversible buffer insert operation.
@@ -49,10 +49,10 @@ impl Operation for Insert {
             line: end_line,
             offset: end_offset,
         };
-        let range = Range{
-            start: self.position.clone(),
-            end: end_position,
-        };
+        let range = range::new(
+            self.position.clone(),
+            end_position
+        );
 
         // Remove the content we'd previously inserted.
         buffer.data.borrow_mut().delete(&range);

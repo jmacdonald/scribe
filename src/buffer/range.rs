@@ -3,8 +3,18 @@ use buffer::Position;
 /// A two-position type, representing a span of characters.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range {
-    pub start: Position,
-    pub end:   Position,
+    start: Position,
+    end:   Position,
+}
+
+impl Range {
+    pub fn start(&self) -> Position {
+        self.start
+    }
+    
+    pub fn end(&self) -> Position {
+        self.end
+    }
 }
 
 pub fn new(start: Position, end: Position) -> Range {
@@ -27,15 +37,15 @@ mod tests {
         let mut end = Position { line: 1, offset: 1 };
         let mut range = new(start, end);
 
-        assert_eq!(range.start, start);
-        assert_eq!(range.end, end);
+        assert_eq!(range.start(), start);
+        assert_eq!(range.end(), end);
 
         start = Position { line: 0, offset: 4 };
         end = Position { line: 0, offset: 4 };
         range = new(start, end);
 
-        assert_eq!(range.start, start);
-        assert_eq!(range.end, end);
+        assert_eq!(range.start(), start);
+        assert_eq!(range.end(), end);
     }
 
     #[test]
@@ -44,7 +54,7 @@ mod tests {
         let end = Position { line: 1, offset: 1 };
         let range = new(start, end);
 
-        assert_eq!(range.start, end);
-        assert_eq!(range.end, start);
+        assert_eq!(range.start(), end);
+        assert_eq!(range.end(), start);
     }
 }

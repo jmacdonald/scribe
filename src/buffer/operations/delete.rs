@@ -1,5 +1,5 @@
 use buffer::operation::Operation;
-use buffer::{Buffer, Range, Position};
+use buffer::{Buffer, Position, Range, range};
 use std::clone::Clone;
 
 /// A reversible buffer delete operation.
@@ -28,7 +28,7 @@ impl Operation for Delete {
     fn reverse(&mut self, buffer: &mut Buffer) {
         match self.content {
             Some(ref content) => {
-                buffer.data.borrow_mut().insert(content, &self.range.start);
+                buffer.data.borrow_mut().insert(content, &self.range.start());
 
                 // We've modified the buffer, but it doesn't know that. Bust its cache.
                 buffer.clear_caches()
@@ -78,7 +78,7 @@ impl Buffer {
         let start = self.cursor.position.clone();
 
         // Now that we've established the range, defer.
-        self.delete_range(Range{ start: start, end: end });
+        self.delete_range(range::new(start, end));
     }
 
     /// Removes a range of characters from the buffer.
@@ -93,7 +93,7 @@ impl Buffer {
     /// // Set up the range we'd like to delete.
     /// let start = scribe::buffer::Position{ line: 0, offset: 6 };
     /// let end = scribe::buffer::Position{ line: 0, offset: 14 };
-    /// let range = scribe::buffer::Range{ start: start, end: end };
+    /// let range = scribe::buffer::range::new(start, end);
     ///
     /// buffer.delete_range(range);
     ///
@@ -119,7 +119,7 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::new;
-    use buffer::{Position, Range};
+    use buffer::{Position, range};
     use buffer::operation::Operation;
 
     #[test]
@@ -131,7 +131,7 @@ mod tests {
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 0, offset: 9 };
         let end = Position{ line: 0, offset: 14 };
-        let delete_range = Range{ start: start, end: end };
+        let delete_range = range::new(start, end);
 
         // Create the delete operation and run it.
         let mut delete_operation = super::new(delete_range);
@@ -153,7 +153,7 @@ mod tests {
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 1, offset: 10 };
         let end = Position{ line: 3, offset: 9 };
-        let delete_range = Range{ start: start, end: end };
+        let delete_range = range::new(start, end);
 
         // Create the delete operation and run it.
         //

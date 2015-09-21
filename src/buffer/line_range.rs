@@ -1,4 +1,4 @@
-use buffer::{Position, Range};
+use buffer::{Position, Range, range};
 
 /// A more concise expression for ranges spanning complete lines.
 pub struct LineRange {
@@ -12,21 +12,21 @@ impl LineRange {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer::{LineRange, Position, Range};
+    /// use scribe::buffer::{LineRange, Position, Range, range};
     ///
     /// // Builder a line range.
     /// let line_range = LineRange{ start: 10, end: 14 };
     ///
     /// // Ensure that the resulting range is a zero-based equivalent.
-    /// assert_eq!(line_range.to_range(), Range{
-    ///     start: Position{ line: 10, offset: 0 },
-    ///     end: Position{ line: 14, offset:0 },
-    /// });
+    /// assert_eq!(line_range.to_range(), range::new(
+    ///     Position{ line: 10, offset: 0 },
+    ///     Position{ line: 14, offset:0 }
+    /// ));
     /// ```
     pub fn to_range(&self) -> Range {
-        Range{
-            start: Position{ line: self.start, offset: 0 },
-            end: Position{ line: self.end, offset:0 },
-        }
+        range::new(
+            Position{ line: self.start, offset: 0 },
+            Position{ line: self.end, offset:0 }
+        )
     }
 }

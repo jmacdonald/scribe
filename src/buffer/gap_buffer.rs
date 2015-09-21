@@ -79,12 +79,15 @@ impl GapBuffer {
     ///
     /// ```
     /// let buffer = scribe::buffer::gap_buffer::new("my data".to_string());
-    /// let range = scribe::buffer::Range{ start: scribe::buffer::Position{ line: 0, offset: 3 },
-    ///   end: scribe::buffer::Position{ line: 0, offset: 7} };
+    /// let range = scribe::buffer::range::new(
+    ///   scribe::buffer::Position{ line: 0, offset: 3 },
+    ///   scribe::buffer::Position{ line: 0, offset: 7}
+    /// );
+    ///
     /// assert_eq!(buffer.read(&range).unwrap(), "data");
     /// ```
     pub fn read(&self, range: &Range) -> Option<String> {
-        let start_offset = match self.find_offset(&range.start) {
+        let start_offset = match self.find_offset(&range.start()) {
             Some(offset) => {
                 // If the gap is at the position we're looking for, skip over it, as
                 // we don't want to include the gap contents in what we're reading.
@@ -97,7 +100,7 @@ impl GapBuffer {
             None => return None,
         };
 
-        let end_offset = match self.find_offset(&range.end) {
+        let end_offset = match self.find_offset(&range.end()) {
             Some(o) => o,
             None => return None,
         };
@@ -123,19 +126,22 @@ impl GapBuffer {
     ///
     /// ```
     /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
-    /// let range = scribe::buffer::Range{ start: scribe::buffer::Position{ line: 0, offset: 0 },
-    ///   end: scribe::buffer::Position{ line: 0, offset: 3} };
+    /// let range = scribe::buffer::range::new(
+    ///   scribe::buffer::Position{ line: 0, offset: 0 },
+    ///   scribe::buffer::Position{ line: 0, offset: 3}
+    /// );
+    ///
     /// buffer.delete(&range);
     /// assert_eq!(buffer.to_string(), "data");
     /// ```
     pub fn delete(&mut self, range: &Range) {
-        let start_offset = match self.find_offset(&range.start) {
+        let start_offset = match self.find_offset(&range.start()) {
             Some(o) => o,
             None => return,
         };
         self.move_gap(start_offset);
 
-        match self.find_offset(&range.end) {
+        match self.find_offset(&range.end()) {
             Some(offset) => {
                 // Widen the gap to cover the deleted contents.
                 self.gap_length = offset - self.gap_start;
@@ -143,7 +149,7 @@ impl GapBuffer {
             None => {
                 // The end of the range doesn't exist; check
                 // if it's on the last line in the file.
-                let start_of_next_line = Position{ line: range.end.line + 1, offset: 0 };
+                let start_of_next_line = Position{ line: range.end().line + 1, offset: 0 };
 
                 match self.find_offset(&start_of_next_line) {
                     Some(offset) => {
@@ -275,7 +281,7 @@ impl GapBuffer {
 mod tests {
     use super::*;
     use buffer::Position;
-    use buffer::Range;
+    use buffer::range;
 
     #[test]
     fn move_gap_works() {
@@ -338,7 +344,7 @@ mod tests {
         let mut gb = new("This is a test.\nSee what happens.".to_string());
         let start = Position{ line: 0, offset: 8 };
         let end = Position{ line: 1, offset: 4 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "This is what happens.");
     }
 
@@ -348,7 +354,7 @@ mod tests {
         gb.insert("This is a test.", &Position{ line: 0, offset: 0});
         let start = Position{ line: 0, offset: 0 };
         let end = Position{ line: 0, offset: 1 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "his is a test.");
     }
 
@@ -357,13 +363,13 @@ mod tests {
         let mut gb = new("This is a test.".to_string());
         let mut start = Position{ line: 0, offset: 8 };
         let mut end = Position{ line: 0, offset: 9 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "This is  test.");
         assert_eq!(gb.gap_length, 1);
 
         start = Position{ line: 0, offset: 9 };
         end = Position{ line: 0, offset: 10 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "This is  est.");
         assert_eq!(gb.gap_length, 2);
     }
@@ -373,7 +379,7 @@ mod tests {
         let mut gb = new("scribe\nlibrary".to_string());
         let start = Position{ line: 0, offset: 6 };
         let end = Position{ line: 2, offset: 10 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "scribe");
     }
 
@@ -382,7 +388,7 @@ mod tests {
         let mut gb = new("scribe\nlibrary".to_string());
         let start = Position{ line: 0, offset: 0 };
         let end = Position{ line: 0, offset: 100 };
-        gb.delete(&Range{ start: start, end: end });
+        gb.delete(&range::new(start, end));
         assert_eq!(gb.to_string(), "library");
     }
 
@@ -390,10 +396,10 @@ mod tests {
     fn read_does_not_include_gap_contents_when_gap_is_at_start_of_range() {
         // Create a buffer and a range that captures the first character.
         let mut gb = new("scribe".to_string());
-        let range = Range{
-            start: Position{ line: 0, offset: 0 },
-            end: Position{ line: 0, offset: 1 }
-        };
+        let range = range::new(
+            Position{ line: 0, offset: 0 },
+            Position{ line: 0, offset: 1 }
+        );
 
         // Delete the first character, which will move the gap buffer to the start.
         gb.delete(&range);
