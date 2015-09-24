@@ -79,7 +79,7 @@ impl Cursor {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
-                    target_offset = line.len();
+                    target_offset = line.chars().count();
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
@@ -102,7 +102,7 @@ impl Cursor {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
-                    target_offset = line.len();
+                    target_offset = line.chars().count();
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
@@ -143,7 +143,7 @@ impl Cursor {
         let current_line = data.lines().nth(self.line);
         match current_line {
             Some(line) => {
-                let new_position = Position{ line: self.line, offset: line.len() };
+                let new_position = Position{ line: self.line, offset: line.chars().count() };
                 self.move_to(new_position);
             },
             None => (),

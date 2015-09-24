@@ -33,12 +33,12 @@ impl Operation for Insert {
         let end_offset = if line_count == 1 {
             // If there's only one line, the range starts and ends on the same line, and so its
             // offset needs to take the original insertion location into consideration.
-            self.position.offset + self.content.len()
+            self.position.offset + self.content.chars().count()
         } else {
             // If there are multiple lines, the end of the range doesn't
             // need to consider the original insertion location.
             match self.content.split("\n").last() {
-                Some(line) => line.len(),
+                Some(line) => line.chars().count(),
                 None => return,
             }
         };
