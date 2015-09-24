@@ -1,3 +1,10 @@
+### 0.3.1
+
+* Fixed an issue where reversing an insert operation with a trailing newline
+  character would remove more data than was inserted.
+* Fixed various line length calculations incorrectly using byte lengths instead
+  of character counts.
+
 ### 0.3.0
 
 * Added a read method to Buffer type for reading arbitrary ranges.
