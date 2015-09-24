@@ -259,6 +259,27 @@ impl Buffer {
         };
     }
 
+    /// Tries to read the specified range from the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer;
+    /// use scribe::buffer::Position;
+    ///
+    /// let mut buffer = buffer::new();
+    /// buffer.insert("scribe");
+    ///
+    /// let range = buffer::range::new(
+    ///     Position{ line: 0, offset: 1 },
+    ///     Position{ line: 0, offset: 5 }
+    /// );
+    /// assert_eq!("crib", buffer.read(&range).unwrap());
+    /// ```
+    pub fn read(&self, range: &Range) -> Option<String> {
+        self.data.borrow().read(range)
+    }
+
     /// Called when caches are invalidated via buffer modifications.
     fn clear_caches(&mut self) {
         self.data_cache = None;
