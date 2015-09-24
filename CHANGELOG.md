@@ -1,3 +1,7 @@
+### 0.3.0
+
+* Added a read method to Buffer type for reading arbitrary ranges.
+
 ### 0.2.7
 
 * Removed is_valid method from Range type.
