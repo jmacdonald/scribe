@@ -37,7 +37,7 @@ impl Operation for Insert {
         } else {
             // If there are multiple lines, the end of the range doesn't
             // need to consider the original insertion location.
-            match self.content.lines().last() {
+            match self.content.split("\n").last() {
                 Some(line) => line.len(),
                 None => return,
             }
@@ -156,5 +156,19 @@ mod tests {
 
         insert_operation.reverse(&mut buffer);
         assert_eq!(buffer.data(), "");
+    }
+
+    #[test]
+    fn reverse_correctly_removes_line_ranges() {
+        // Set up a buffer with some data.
+        let mut buffer = ::buffer::new();
+        buffer.insert(&"scribe\nlibrary\n");
+
+        let mut insert_operation = super::new("editor\n".to_string(), Position{ line: 1, offset: 0 });
+        insert_operation.run(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\neditor\nlibrary\n");
+
+        insert_operation.reverse(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\nlibrary\n");
     }
 }
