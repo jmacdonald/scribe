@@ -4,7 +4,8 @@ use std::path::Path;
 pub enum Type {
     JSON,
     XML,
-    Ruby
+    Ruby,
+    Rust
 }
 
 pub fn from_path(path: &Path) -> Option<Type> {
@@ -15,6 +16,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
                 Some("json") => Some(Type::JSON),
                 Some("xml") => Some(Type::XML),
                 Some("rb") => Some(Type::Ruby),
+                Some("rs") => Some(Type::Rust),
                 _ => None,
             }
         },
