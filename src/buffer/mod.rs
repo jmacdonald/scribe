@@ -15,7 +15,7 @@ pub use self::luthor::token::{Token, Category};
 pub mod gap_buffer;
 mod position;
 pub mod range;
-mod line_range;
+pub mod line_range;
 pub mod cursor;
 mod type_detection;
 mod operation;
