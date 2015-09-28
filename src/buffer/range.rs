@@ -16,6 +16,32 @@ impl Range {
         self.end
     }
 
+    /// Whether or not the range includes the specified position.
+    /// The range is exclusive, such that its ending position is not included.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::{Position, range};
+    ///
+    /// // Builder a range.
+    /// let range = range::new(
+    ///     Position{ line: 0, offset: 0 },
+    ///     Position{ line: 1, offset: 5 }
+    /// );
+    ///
+    /// assert!(range.includes(
+    ///     &Position{ line: 1, offset: 0 }
+    /// ));
+    ///
+    /// assert!(range.includes(
+    ///     &Position{ line: 1, offset: 4 }
+    /// ));
+    ///
+    /// assert!(!range.includes(
+    ///     &Position{ line: 1, offset: 5 }
+    /// ));
+    /// ```
     pub fn includes(&self, position: &Position) -> bool {
         position >= &self.start() && position < &self.end()
     }
@@ -60,41 +86,5 @@ mod tests {
 
         assert_eq!(range.start(), end);
         assert_eq!(range.end(), start);
-    }
-
-    #[test]
-    fn includes_is_true_when_position_is_in_range() {
-        let start = Position { line: 0, offset: 0 };
-        let end = Position { line: 2, offset: 0 };
-        let range = new(start, end);
-
-        assert!(range.includes(&Position{
-            line: 1,
-            offset: 0
-        }));
-    }
-
-    #[test]
-    fn includes_is_true_when_position_is_on_end_line_but_within_range() {
-        let start = Position { line: 0, offset: 0 };
-        let end = Position { line: 1, offset: 5 };
-        let range = new(start, end);
-
-        assert!(range.includes(&Position{
-            line: 1,
-            offset: 3 
-        }));
-    }
-
-    #[test]
-    fn includes_is_false_when_position_is_out_of_range() {
-        let start = Position { line: 0, offset: 0 };
-        let end = Position { line: 2, offset: 0 };
-        let range = new(start, end);
-
-        assert!(!range.includes(&Position{
-            line: 3,
-            offset: 0
-        }));
     }
 }
