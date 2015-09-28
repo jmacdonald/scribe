@@ -20,10 +20,10 @@ impl LineRange {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer::{LineRange, Position, Range, range};
+    /// use scribe::buffer::{line_range, Position, range};
     ///
     /// // Builder a line range.
-    /// let line_range = LineRange{ start: 10, end: 14 };
+    /// let line_range = line_range::new(10, 14);
     ///
     /// // Ensure that the resulting range is a zero-based equivalent.
     /// assert_eq!(line_range.to_range(), range::new(
@@ -37,6 +37,25 @@ impl LineRange {
             Position{ line: self.end, offset:0 }
         )
     }
+
+    /// Whether or not the line range includes the specified line.
+    /// The range is exclusive, such that its ending line is not included.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::line_range;
+    ///
+    /// // Builder a line range.
+    /// let line_range = line_range::new(10, 14);
+    ///
+    /// assert!(line_range.includes(11));
+    /// assert!(!line_range.includes(14));
+    /// ```
+    pub fn includes(&self, line: usize) -> bool {
+        line >= self.start() && line < self.end()
+    }
+}
 
 pub fn new(start: usize, end: usize) -> LineRange {
     if start < end {
