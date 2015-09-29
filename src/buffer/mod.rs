@@ -31,6 +31,7 @@ use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
 use self::luthor::lexers;
+use std::str::pattern::Pattern;
 
 /// A feature-rich wrapper around an underlying gap buffer.
 ///
@@ -278,6 +279,45 @@ impl Buffer {
     /// ```
     pub fn read(&self, range: &Range) -> Option<String> {
         self.data.borrow().read(range)
+    }
+
+    /// Searches the buffer for (and returns positions
+    /// associated with) occurrences of `needle`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer;
+    /// use scribe::buffer::Position;
+    ///
+    /// let mut buffer = buffer::new();
+    /// buffer.insert("scribe\nlibrary");
+    ///
+    /// assert_eq!(
+    ///     buffer.search("ib"),
+    ///     vec![
+    ///         Position{ line: 0, offset: 3 },
+    ///         Position{ line: 1, offset: 1 }
+    ///     ]
+    /// );
+    /// ```
+    pub fn search(&mut self, needle: &str) -> Vec<Position> {
+        let mut results = Vec::new();
+
+        for (line, data) in self.data().lines().enumerate() {
+            for offset in 0..data.len() {
+                if needle.is_prefix_of(&data[offset..data.len()]) {
+                    results.push(
+                        Position{
+                            line: line,
+                            offset: offset
+                        }
+                    );
+                }
+            }
+        }
+
+        results
     }
 
     /// Called when caches are invalidated via buffer modifications.
@@ -540,5 +580,15 @@ mod tests {
         // and undoes the previous operation.
         buffer.undo();
         assert_eq!(buffer.data(), "");
+    }
+
+    #[test]
+    fn search_returns_empty_set_when_there_are_no_matches() {
+        let mut buffer = new();
+
+        // Run an operation outside of the group.
+        buffer.insert("scribe");
+
+        assert!(buffer.search("library").is_empty());
     }
 }
