@@ -1,6 +1,7 @@
 use buffer::{Position, Range, range};
 
 /// A more concise expression for ranges spanning complete lines.
+#[derive(PartialEq, Debug)]
 pub struct LineRange {
     start: usize,
     end:   usize,
