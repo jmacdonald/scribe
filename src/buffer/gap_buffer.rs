@@ -257,7 +257,7 @@ impl GapBuffer {
             self.gap_start = offset;
         } else if offset > self.gap_start {
             // Shift the gap to the right one byte at a time.
-            for index in (self.gap_start+self.gap_length..offset) {
+            for index in self.gap_start + self.gap_length..offset {
                 self.data[index-self.gap_length] = self.data[index];
                 self.data[index] = 0;
             }

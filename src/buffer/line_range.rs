@@ -23,7 +23,7 @@ impl LineRange {
     /// ```
     /// use scribe::buffer::{line_range, Position, range};
     ///
-    /// // Builder a line range.
+    /// // Build a line range.
     /// let line_range = line_range::new(10, 14);
     ///
     /// // Ensure that the resulting range is a zero-based equivalent.
@@ -39,6 +39,30 @@ impl LineRange {
         )
     }
 
+    /// Converts the line range to a regular, zero-offset range, including
+    /// the line on which the range ends.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::{line_range, Position, range};
+    ///
+    /// // Build a line range.
+    /// let line_range = line_range::new(10, 14);
+    ///
+    /// // Ensure that the resulting range is a zero-based equivalent.
+    /// assert_eq!(line_range.to_inclusive_range(), range::new(
+    ///     Position{ line: 10, offset: 0 },
+    ///     Position{ line: 15, offset:0 }
+    /// ));
+    /// ```
+    pub fn to_inclusive_range(&self) -> Range {
+        range::new(
+            Position{ line: self.start, offset: 0 },
+            Position{ line: self.end+1, offset:0 }
+        )
+    }
+
     /// Whether or not the line range includes the specified line.
     /// The range is exclusive, such that its ending line is not included.
     ///
@@ -47,7 +71,7 @@ impl LineRange {
     /// ```
     /// use scribe::buffer::line_range;
     ///
-    /// // Builder a line range.
+    /// // Build a line range.
     /// let line_range = line_range::new(10, 14);
     ///
     /// assert!(line_range.includes(11));
