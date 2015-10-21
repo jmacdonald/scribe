@@ -2,7 +2,6 @@
 
 use super::Position;
 use super::Range;
-use std::str::from_utf8;
 
 /// A UTF-8 string buffer designed to minimize reallocations,
 /// maintaining performance amid frequent modifications.
@@ -105,7 +104,7 @@ impl GapBuffer {
             None => return None,
         };
 
-        Some(from_utf8(&self.data[start_offset..end_offset]).unwrap().to_string())
+        Some(String::from_utf8_lossy(&self.data[start_offset..end_offset]).into_owned())
     }
 
     /// Returns a string representation of the buffer data (without gap).
@@ -117,7 +116,8 @@ impl GapBuffer {
     /// assert_eq!(buffer.to_string(), "my data");
     /// ```
     pub fn to_string(&self) -> String {
-        from_utf8(&self.data[..self.gap_start]).unwrap().to_string() + from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap()
+        String::from_utf8_lossy(&self.data[..self.gap_start]).to_string() +
+        &*String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..])
     }
 
     /// Removes the specified range of data from the buffer.
@@ -185,7 +185,7 @@ impl GapBuffer {
 
     // Maps a position to its offset equivalent in the data.
     fn find_offset(&self, position: &Position) -> Option<usize> {
-        let first_half = from_utf8(&self.data[..self.gap_start]).unwrap();
+        let first_half = String::from_utf8_lossy(&self.data[..self.gap_start]).to_owned();
         let mut line = 0;
         let mut line_offset = 0;
 
@@ -213,7 +213,7 @@ impl GapBuffer {
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
-        let second_half = from_utf8(&self.data[self.gap_start+self.gap_length..]).unwrap();
+        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]).to_owned();
         for char_index in second_half.char_indices() {
             let (offset, character) = char_index;
 

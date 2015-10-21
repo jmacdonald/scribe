@@ -66,8 +66,9 @@ impl Buffer {
             Some(ref cache) => cache.clone(), // Cache hit; return a copy.
             None => {
                 // Cache miss; update the cache w/ fresh data and return a copy.
-                self.data_cache = Some(self.data.borrow().to_string());
-                self.data_cache.clone().unwrap()
+                let data = self.data.borrow().to_string();
+                self.data_cache = Some(data.clone());
+                data
             }
         }
     }
@@ -143,8 +144,9 @@ impl Buffer {
             Some(ref cache) => cache.clone(), // Cache hit; return a copy.
             None => {
                 // Cache miss; update the cache w/ fresh tokens and return a copy.
-                self.token_cache = Some((self.lexer)(&self.data()));
-                self.token_cache.clone().unwrap()
+                let data = (self.lexer)(&self.data());
+                self.token_cache = Some(data.clone());
+                data
             }
         }
     }
