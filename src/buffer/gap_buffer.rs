@@ -74,6 +74,7 @@ impl GapBuffer {
     }
 
     /// Returns the specified range of data from the buffer.
+    /// If any part of the range does not exist, a none value will be returned.
     ///
     /// # Examples
     ///
@@ -87,19 +88,11 @@ impl GapBuffer {
     /// assert_eq!(buffer.read(&range).unwrap(), "data");
     /// ```
     pub fn read(&self, range: &Range) -> Option<String> {
+        // Map positions to offsets in the buffer.
         let start_offset = match self.find_offset(&range.start()) {
-            Some(offset) => {
-                // If the gap is at the position we're looking for, skip over it, as
-                // we don't want to include the gap contents in what we're reading.
-                if offset == self.gap_start {
-                    offset + self.gap_length
-                } else {
-                    offset
-                }
-            },
+            Some(offset) => offset,
             None => return None,
         };
-
         let end_offset = match self.find_offset(&range.end()) {
             Some(offset) => offset,
             None => return None,
@@ -119,6 +112,7 @@ impl GapBuffer {
 
             data
         } else {
+            // No gap in the way; just return the requested data range.
             String::from_utf8_lossy(&self.data[start_offset..end_offset]).into_owned()
         };
 
@@ -227,7 +221,7 @@ impl GapBuffer {
         // We didn't find the position *within* the first half, but it could
         // be right after it, which means it's right at the start of the gap.
         if line == position.line && line_offset == position.offset {
-            return Some(self.gap_start);
+            return Some(self.gap_start+self.gap_length);
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
