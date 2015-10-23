@@ -2,6 +2,7 @@
 
 use super::Position;
 use super::Range;
+use std::borrow::Borrow;
 
 /// A UTF-8 string buffer designed to minimize reallocations,
 /// maintaining performance amid frequent modifications.
@@ -100,11 +101,28 @@ impl GapBuffer {
         };
 
         let end_offset = match self.find_offset(&range.end()) {
-            Some(o) => o,
+            Some(offset) => offset,
             None => return None,
         };
 
-        Some(String::from_utf8_lossy(&self.data[start_offset..end_offset]).into_owned())
+        let data = if start_offset < self.gap_start && self.gap_start < end_offset {
+            // The gap is in the middle of the range being requested.
+            // Stitch the surrounding halves together to exclude it.
+            let first_half = &self.data[start_offset..self.gap_start];
+            let second_half = &self.data[self.gap_start+self.gap_length..end_offset];
+
+            // Allocate a string for the first half.
+            let mut data = String::from_utf8_lossy(first_half).into_owned();
+
+            // Push the second half onto the first.
+            data.push_str(String::from_utf8_lossy(second_half).borrow());
+
+            data
+        } else {
+            String::from_utf8_lossy(&self.data[start_offset..end_offset]).into_owned()
+        };
+
+        Some(data)
     }
 
     /// Returns a string representation of the buffer data (without gap).
@@ -408,5 +426,24 @@ mod tests {
         // Ask for the first character, which would include the deleted
         // value, if the read function isn't smart enough to skip it.
         assert_eq!(gb.read(&range).unwrap(), "c");
+    }
+
+    #[test]
+    fn read_does_not_include_gap_contents_when_gap_is_in_middle_of_range() {
+        let mut gb = new("scribe".to_string());
+
+        // Delete data from the middle of the buffer, which will move the gap there.
+        gb.delete(&range::new(
+            Position{ line: 0, offset: 2 },
+            Position{ line: 0, offset: 4 }
+        ));
+        assert_eq!(gb.to_string(), "scbe");
+
+        // Request a range that extends from the start to the finish.
+        let range = range::new(
+            Position{ line: 0, offset: 0 },
+            Position{ line: 0, offset: 4 }
+        );
+        assert_eq!(gb.read(&range).unwrap(), "scbe");
     }
 }
