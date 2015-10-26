@@ -1,3 +1,8 @@
+### 0.3.7
+
+* Fixed an issue where searching a buffer with multi-byte unicode characters
+  would panic due to incorrect/non-byte-offset slicing.
+
 ### 0.3.1
 
 * Fixed an issue where reversing an insert operation with a trailing newline
