@@ -1,3 +1,7 @@
+### 0.3.8
+
+* Update luthor dependency to v0.1.4.
+
 ### 0.3.7
 
 * Fixed an issue where searching a buffer with multi-byte unicode characters
