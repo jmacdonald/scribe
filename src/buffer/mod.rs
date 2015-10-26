@@ -307,8 +307,8 @@ impl Buffer {
         let mut results = Vec::new();
 
         for (line, data) in self.data().lines().enumerate() {
-            for offset in 0..data.len() {
-                if needle.is_prefix_of(&data[offset..data.len()]) {
+            for (offset, _) in data.char_indices() {
+                if needle.is_prefix_of(&data[offset..]) {
                     results.push(
                         Position{
                             line: line,
@@ -590,6 +590,16 @@ mod tests {
 
         // Run an operation outside of the group.
         buffer.insert("scribe");
+
+        assert!(buffer.search("library").is_empty());
+    }
+
+    #[test]
+    fn search_does_not_panic_with_non_ascii_data() {
+        let mut buffer = new();
+
+        // Run an operation outside of the group.
+        buffer.insert("scribé");
 
         assert!(buffer.search("library").is_empty());
     }
