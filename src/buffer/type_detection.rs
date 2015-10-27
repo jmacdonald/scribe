@@ -5,7 +5,8 @@ pub enum Type {
     JSON,
     XML,
     Ruby,
-    Rust
+    Rust,
+    ERB
 }
 
 pub fn from_path(path: &Path) -> Option<Type> {
@@ -17,6 +18,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
                 Some("xml") => Some(Type::XML),
                 Some("rb") => Some(Type::Ruby),
                 Some("rs") => Some(Type::Rust),
+                Some("erb") => Some(Type::ERB),
                 _ => None,
             }
         },
