@@ -1,3 +1,7 @@
+### 0.3.9
+
+* Add cursor methods for moving to start and end of buffer.
+
 ### 0.3.8
 
 * Update luthor dependency to v0.1.4.
