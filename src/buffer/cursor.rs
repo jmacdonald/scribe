@@ -174,6 +174,25 @@ impl Cursor {
             };
         self.move_to(target_position);
     }
+
+    /// Moves the cursor to the first line in the buffer.
+    pub fn move_to_start_of_buffer(&mut self) {
+        // Figure out the length of the first line.
+        let length = match self.data.borrow().to_string().lines().nth(0) {
+            Some(line_content) => line_content.len(),
+            None => 0
+        };
+
+        let target_position =
+            if length < self.sticky_offset {
+                // Current offset is beyond the first line's length; move to the end of it.
+                Position{ line: 0, offset: length }
+            } else {
+                // Current offset is available on the first line; go there.
+                Position{ line: 0, offset: self.sticky_offset }
+            };
+        self.move_to(target_position);
+    }
 }
 
 #[cfg(test)]
@@ -299,5 +318,23 @@ mod tests {
         cursor.move_to_end_of_buffer();
         assert_eq!(cursor.line, 3);
         assert_eq!(cursor.offset, 0);
+    }
+
+    #[test]
+    fn move_to_start_of_buffer_moves_to_same_offset_on_first_line() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("first\nsecond\nlast".to_string())));
+        let mut cursor = new(buffer, Position{ line: 1, offset: 2 });
+        cursor.move_to_start_of_buffer();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 2);
+    }
+
+    #[test]
+    fn move_to_start_of_buffer_moves_to_end_of_first_line_if_offset_would_be_out_of_range() {
+        let buffer = Rc::new(RefCell::new(gap_buffer::new("first\nsecond\nlast".to_string())));
+        let mut cursor = new(buffer, Position{ line: 1, offset: 6 });
+        cursor.move_to_start_of_buffer();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 5);
     }
 }
