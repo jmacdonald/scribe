@@ -1,3 +1,8 @@
+### 0.3.10
+
+* Add workspace open_buffer method to add a buffer by path, also guarding
+  against adding a buffer with the same path as an existing one.
+
 ### 0.3.9
 
 * Add cursor methods for moving to start and end of buffer.
