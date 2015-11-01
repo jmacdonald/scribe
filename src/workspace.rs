@@ -1,6 +1,8 @@
 //! Buffer and working directory management.
 
+use buffer;
 use buffer::Buffer;
+use std::io::Error;
 use std::path::PathBuf;
 
 /// An owned collection of buffers and associated path,
@@ -33,6 +35,61 @@ impl Workspace {
     pub fn add_buffer(&mut self, buf: Buffer) {
         self.buffers.push(buf);
         self.current_buffer_index = Some(self.buffers.len()-1);
+    }
+
+    /// Opens a buffer at the specified path and selects it.
+    /// If a buffer with the specified path already exists,
+    /// it is selected, rather than opening a duplicate buffer.
+    /// Any errors encountered while opening the buffer are returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::path::PathBuf;
+    ///
+    /// // Set up the paths we'll use.
+    /// let directory_path = PathBuf::from("tests/sample");
+    /// let file_path = PathBuf::from("tests/sample/file");
+    ///
+    /// // Create a workspace.
+    /// let mut workspace = scribe::workspace::new(directory_path);
+    ///
+    /// // Open a buffer in the workspace.
+    /// workspace.open_buffer(file_path.clone());
+    /// ```
+    pub fn open_buffer(&mut self, path: PathBuf) -> Option<Error> {
+        if self.contains_buffer_with_path(&path) {
+            // We already have this buffer in the workspace.
+            // Loop through the buffers until it's selected.
+            loop {
+                match self.current_buffer() {
+                    Some(buffer) => {
+                        match buffer.path {
+                            Some(ref current_path) => {
+                                if *current_path == path {
+                                    break;
+                                }
+                            },
+                            None => (),
+                        }
+                    },
+                    None => (),
+                }
+
+                self.next_buffer()
+            }
+
+            // Not going to run into IO errors if we're not opening a buffer.
+            None
+        } else {
+            match buffer::from_file(path) {
+                Ok(buffer) => {
+                    self.add_buffer(buffer);
+                    None
+                },
+                Err(error) => Some(error),
+            }
+        }
     }
 
     /// Returns a mutable reference to the currently
@@ -221,6 +278,44 @@ mod tests {
         workspace.add_buffer(buf);
 
         assert_eq!(workspace.buffers.len(), 1);
+        assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
+    }
+
+    #[test]
+    fn open_buffer_adds_and_selects_the_buffer_at_the_specified_path() {
+        let mut workspace = new(PathBuf::from("tests/sample"));
+        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+
+        assert_eq!(workspace.buffers.len(), 1);
+        assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
+    }
+
+    #[test]
+    fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
+        let mut workspace = new(PathBuf::from("tests/sample"));
+        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+
+        assert_eq!(workspace.buffers.len(), 1);
+    }
+
+    #[test]
+    fn open_buffer_selects_buffer_if_it_already_exists_in_workspace() {
+        let mut workspace = new(PathBuf::from("tests/sample"));
+        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+
+        // Add and select another buffer.
+        let mut buf = buffer::new();
+        buf.insert("scribe");
+        workspace.add_buffer(buf);
+        assert_eq!(workspace.current_buffer().unwrap().data(), "scribe");
+
+        // Try to add the first buffer again.
+        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+
+        // Ensure there are only two buffers, and that the
+        // one requested via open_buffer is now selected.
+        assert_eq!(workspace.buffers.len(), 2);
         assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
     }
 
