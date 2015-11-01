@@ -34,7 +34,7 @@ impl Workspace {
         self.buffers.push(buf);
         self.current_buffer_index = Some(self.buffers.len()-1);
     }
-    
+
     /// Returns a mutable reference to the currently
     /// selected buffer, unless the workspace is empty.
     ///
@@ -63,7 +63,7 @@ impl Workspace {
             None => None,
         }
     }
-    
+
     /// Removes the currently selected buffer from the collection.
     /// If the workspace is empty, this method does nothing.
     ///
@@ -171,6 +171,35 @@ impl Workspace {
             },
             None => return,
         }
+    }
+
+    /// Whether or not the workspace contains a buffer with the specified path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::path::PathBuf;
+    ///
+    /// // Set up the paths we'll use.
+    /// let directory_path = PathBuf::from("tests/sample");
+    /// let file_path = PathBuf::from("tests/sample/file");
+    ///
+    /// // Create a workspace.
+    /// let mut workspace = scribe::workspace::new(directory_path);
+    ///
+    /// // Add a buffer to the workspace.
+    /// let buf = scribe::buffer::from_file(file_path.clone()).unwrap();
+    /// workspace.add_buffer(buf);
+    ///
+    /// assert!(workspace.contains_buffer_with_path(&file_path));
+    /// ```
+    pub fn contains_buffer_with_path(&self, path: &PathBuf) -> bool {
+        self.buffers.iter().any(|buffer| {
+            match buffer.path {
+                Some(ref buffer_path) => path == buffer_path,
+                None => false,
+            }
+        })
     }
 }
 
