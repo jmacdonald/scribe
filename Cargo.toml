@@ -12,4 +12,4 @@ license-file = "LICENSE"
 keywords = ["gap", "buffer", "text", "editor", "document"]
 
 [dependencies]
-luthor = "0.1.5"
+luthor = "0.1.6"

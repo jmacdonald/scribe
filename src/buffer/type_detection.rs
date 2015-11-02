@@ -2,6 +2,7 @@ use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum Type {
+    JavaScript,
     JSON,
     XML,
     Ruby,
@@ -14,6 +15,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
         Some(filename) => {
             let extension = filename.split('.').last();
             match extension {
+                Some("js") => Some(Type::JavaScript),
                 Some("json") => Some(Type::JSON),
                 Some("xml") => Some(Type::XML),
                 Some("rb") => Some(Type::Ruby),
