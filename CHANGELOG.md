@@ -1,3 +1,7 @@
+### 0.4.0
+
+* Update all types to use type-scoped constructor idiom (e.g. Buffer::new() instead of buffer::new()).
+
 ### 0.3.10
 
 * Add workspace open_buffer method to add a buffer by path, also guarding
