@@ -11,6 +11,11 @@ pub struct History {
 }
 
 impl History {
+    /// Creates a new empty operation history.
+    pub fn new() -> History {
+        History{ previous: Vec::new(), next: Vec::new() }
+    }
+
     /// Store an operation that has already been run.
     pub fn add(&mut self, operation: Box<Operation>) {
         self.previous.push(operation);
@@ -44,26 +49,23 @@ impl History {
     }
 }
 
-pub fn new() -> History {
-    History{ previous: Vec::new(), next: Vec::new() }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::new;
-    use buffer::{Position, operations};
+    use super::History;
+    use buffer::{Buffer, Position};
+    use buffer::operations::Insert;
     use buffer::operation::Operation;
 
     #[test]
     fn previous_and_next_return_the_correct_operations() {
-        let mut history = new();
+        let mut history = History::new();
 
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
 
         // Run an insert operation and add it to the history.
         let insert_position = Position{ line: 0, offset: 0 };
-        let mut insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        let mut insert_operation = Insert::new("scribe".to_string(), insert_position);
         insert_operation.run(&mut buffer);
         history.add(Box::new(insert_operation));
 
@@ -101,11 +103,11 @@ mod tests {
 
     #[test]
     fn adding_a_new_operation_clears_redo_stack() {
-        let mut history = new();
+        let mut history = History::new();
 
         // Add an insert operation to the history.
         let insert_position = Position{ line: 0, offset: 0 };
-        let insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        let insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
         // Pull the last history item. This will
@@ -113,7 +115,7 @@ mod tests {
         assert!(history.previous().is_some());
 
         // Add another insert operation to the history.
-        let second_insert_operation = operations::insert::new("scribe".to_string(), insert_position);
+        let second_insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(second_insert_operation));
 
         // Ensure there are no redo items.

@@ -1,5 +1,5 @@
 use buffer::operation::Operation;
-use buffer::{Buffer, Position, range};
+use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 
 /// A reversible buffer insert operation.
@@ -49,7 +49,7 @@ impl Operation for Insert {
             line: end_line,
             offset: end_offset,
         };
-        let range = range::new(
+        let range = Range::new(
             self.position.clone(),
             end_position
         );
@@ -66,8 +66,11 @@ impl Operation for Insert {
     }
 }
 
-pub fn new(content: String, position: Position) -> Insert {
-    Insert{ content: content, position: position }
+impl Insert {
+    /// Creates a new empty insert operation.
+    pub fn new(content: String, position: Position) -> Insert {
+        Insert{ content: content, position: position }
+    }
 }
 
 impl Buffer {
@@ -76,13 +79,15 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::new();
+    /// use scribe::Buffer;
+    ///
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe");
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
     pub fn insert(&mut self, data: &str) {
         // Build and run an insert operation.
-        let mut op = new(data.to_string(), self.cursor.position.clone());
+        let mut op = Insert::new(data.to_string(), self.cursor.position.clone());
         op.run(self);
 
         // Store the operation in the history
@@ -99,21 +104,22 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
-    use super::new;
+    use super::Insert;
+    use buffer::Buffer;
     use buffer::position::Position;
     use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert(&"something");
 
         // Set up a position pointing to the end of the buffer's contents.
         let insert_position = Position{ line: 0, offset: 9 };
 
         // Create the insert operation and run it.
-        let mut insert_operation = super::new(" else".to_string(), insert_position);
+        let mut insert_operation = Insert::new(" else".to_string(), insert_position);
         insert_operation.run(&mut buffer);
 
         assert_eq!(buffer.data(), "something else");
@@ -126,7 +132,7 @@ mod tests {
     #[test]
     fn run_and_reverse_add_and_remove_content_with_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert(&"\n something");
 
         // Set up a position pointing to the end of the buffer's contents.
@@ -136,7 +142,7 @@ mod tests {
         //
         // NOTE: The newline character ensures that the operation doesn't use a naive
         //       algorithm based purely on the content length.
-        let mut insert_operation = super::new("\n else\n entirely".to_string(), insert_position);
+        let mut insert_operation = Insert::new("\n else\n entirely".to_string(), insert_position);
         insert_operation.run(&mut buffer);
 
         assert_eq!(buffer.data(), "\n something\n else\n entirely");
@@ -149,8 +155,8 @@ mod tests {
     #[test]
     fn reverse_removes_a_newline() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
-        let mut insert_operation = super::new("\n".to_string(), Position{ line: 0, offset: 0 });
+        let mut buffer = Buffer::new();
+        let mut insert_operation = Insert::new("\n".to_string(), Position{ line: 0, offset: 0 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "\n");
 
@@ -161,10 +167,10 @@ mod tests {
     #[test]
     fn reverse_correctly_removes_line_ranges() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert(&"scribe\nlibrary\n");
 
-        let mut insert_operation = super::new("editor\n".to_string(), Position{ line: 1, offset: 0 });
+        let mut insert_operation = Insert::new("editor\n".to_string(), Position{ line: 1, offset: 0 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "scribe\neditor\nlibrary\n");
 

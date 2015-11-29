@@ -12,26 +12,28 @@ pub struct GapBuffer {
     gap_length: usize,
 }
 
-/// Initializes a gap buffer with the specified data as its contents.
-///
-/// # Examples
-///
-/// ```
-/// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
-/// assert_eq!(buffer.to_string(), "scribe");
-/// ```
-pub fn new(data: String) -> GapBuffer {
-    let mut bytes = data.into_bytes();
-    let capacity = bytes.capacity();
-    let gap_start = bytes.len();
-    let gap_length = capacity - gap_start;
-    unsafe {
-        bytes.set_len(capacity);
-    }
-    GapBuffer{ data: bytes, gap_start: gap_start, gap_length: gap_length }
-}
-
 impl GapBuffer {
+    /// Initializes a gap buffer with the specified data as its contents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::GapBuffer;
+    ///
+    /// let buffer = GapBuffer::new("scribe".to_string());
+    /// assert_eq!(buffer.to_string(), "scribe");
+    /// ```
+    pub fn new(data: String) -> GapBuffer {
+        let mut bytes = data.into_bytes();
+        let capacity = bytes.capacity();
+        let gap_start = bytes.len();
+        let gap_length = capacity - gap_start;
+        unsafe {
+            bytes.set_len(capacity);
+        }
+        GapBuffer{ data: bytes, gap_start: gap_start, gap_length: gap_length }
+    }
+
     /// Inserts the specified data into the buffer at the specified position.
     /// The buffer will reallocate if there is insufficient space. If the
     /// position is out of bounds, the buffer contents will remain unchanged.
@@ -39,7 +41,9 @@ impl GapBuffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::gap_buffer::new("my buffer data".to_string());
+    /// use scribe::buffer::GapBuffer;
+    ///
+    /// let mut buffer = GapBuffer::new("my buffer data".to_string());
     /// buffer.insert(" changed", &scribe::buffer::Position{ line: 0, offset: 2});
     /// assert_eq!("my changed buffer data", buffer.to_string());
     /// ```
@@ -79,8 +83,10 @@ impl GapBuffer {
     /// # Examples
     ///
     /// ```
-    /// let buffer = scribe::buffer::gap_buffer::new("my data".to_string());
-    /// let range = scribe::buffer::range::new(
+    /// use scribe::buffer::{GapBuffer, Range};
+    ///
+    /// let buffer = GapBuffer::new("my data".to_string());
+    /// let range = Range::new(
     ///   scribe::buffer::Position{ line: 0, offset: 3 },
     ///   scribe::buffer::Position{ line: 0, offset: 7}
     /// );
@@ -124,7 +130,9 @@ impl GapBuffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
+    /// use scribe::buffer::GapBuffer;
+    ///
+    /// let mut buffer = GapBuffer::new("my data".to_string());
     /// assert_eq!(buffer.to_string(), "my data");
     /// ```
     pub fn to_string(&self) -> String {
@@ -137,8 +145,10 @@ impl GapBuffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::gap_buffer::new("my data".to_string());
-    /// let range = scribe::buffer::range::new(
+    /// use scribe::buffer::{GapBuffer, Range};
+    ///
+    /// let mut buffer = GapBuffer::new("my data".to_string());
+    /// let range = Range::new(
     ///   scribe::buffer::Position{ line: 0, offset: 0 },
     ///   scribe::buffer::Position{ line: 0, offset: 3}
     /// );
@@ -184,7 +194,9 @@ impl GapBuffer {
     /// # Examples
     ///
     /// ```
-    /// let buffer = scribe::buffer::gap_buffer::new("scribe".to_string());
+    /// use scribe::buffer::GapBuffer;
+    ///
+    /// let buffer = GapBuffer::new("scribe".to_string());
     /// let in_bounds = scribe::buffer::Position{ line: 0, offset: 0 };
     /// let out_of_bounds = scribe::buffer::Position{ line: 1, offset: 3 };
     ///
@@ -291,20 +303,18 @@ impl GapBuffer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use buffer::Position;
-    use buffer::range;
+    use buffer::{GapBuffer, Position, Range};
 
     #[test]
     fn move_gap_works() {
-        let mut gb = new("This is a test.".to_string());
+        let mut gb = GapBuffer::new("This is a test.".to_string());
         gb.move_gap(0);
         assert_eq!(gb.to_string(), "This is a test.");
     }
 
     #[test]
     fn inserting_at_the_start_works() {
-        let mut gb = new("toolkit".to_string());
+        let mut gb = GapBuffer::new("toolkit".to_string());
 
         // This insert serves to move the gap to the start of the buffer.
         gb.insert(" ", &Position { line: 0, offset: 0 });
@@ -319,7 +329,7 @@ mod tests {
 
     #[test]
     fn inserting_in_the_middle_works() {
-        let mut gb = new("    editor".to_string());
+        let mut gb = GapBuffer::new("    editor".to_string());
 
         // Same deal as above "at the start" test, where we want to move
         // the gap into the middle and then force a reallocation to check
@@ -331,14 +341,14 @@ mod tests {
 
     #[test]
     fn inserting_at_the_end_works() {
-        let mut gb = new("This is a test.".to_string());
+        let mut gb = GapBuffer::new("This is a test.".to_string());
         gb.insert(" Seriously.", &Position { line: 0, offset: 15 });
         assert_eq!(gb.to_string(), "This is a test. Seriously.");
     }
 
     #[test]
     fn inserting_in_different_spots_twice_works() {
-        let mut gb = new("This is a test.".to_string());
+        let mut gb = GapBuffer::new("This is a test.".to_string());
         gb.insert("Hi. ", &Position { line: 0, offset: 0 });
         gb.insert(" Thank you.", &Position { line: 0, offset: 19 });
         assert_eq!(gb.to_string(), "Hi. This is a test. Thank you.");
@@ -346,69 +356,69 @@ mod tests {
 
     #[test]
     fn inserting_at_an_invalid_position_does_nothing() {
-        let mut gb = new("This is a test.".to_string());
+        let mut gb = GapBuffer::new("This is a test.".to_string());
         gb.insert(" Seriously.", &Position { line: 0, offset: 35 });
         assert_eq!(gb.to_string(), "This is a test.");
     }
 
     #[test]
     fn deleting_works() {
-        let mut gb = new("This is a test.\nSee what happens.".to_string());
+        let mut gb = GapBuffer::new("This is a test.\nSee what happens.".to_string());
         let start = Position{ line: 0, offset: 8 };
         let end = Position{ line: 1, offset: 4 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is what happens.");
     }
 
     #[test]
     fn inserting_then_deleting_at_the_start_works() {
-        let mut gb = new(String::new());
+        let mut gb = GapBuffer::new(String::new());
         gb.insert("This is a test.", &Position{ line: 0, offset: 0});
         let start = Position{ line: 0, offset: 0 };
         let end = Position{ line: 0, offset: 1 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "his is a test.");
     }
 
     #[test]
     fn deleting_immediately_after_the_end_of_the_gap_widens_the_gap() {
-        let mut gb = new("This is a test.".to_string());
+        let mut gb = GapBuffer::new("This is a test.".to_string());
         let mut start = Position{ line: 0, offset: 8 };
         let mut end = Position{ line: 0, offset: 9 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is  test.");
         assert_eq!(gb.gap_length, 1);
 
         start = Position{ line: 0, offset: 9 };
         end = Position{ line: 0, offset: 10 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is  est.");
         assert_eq!(gb.gap_length, 2);
     }
 
     #[test]
     fn deleting_to_an_out_of_range_line_deletes_to_the_end_of_the_buffer() {
-        let mut gb = new("scribe\nlibrary".to_string());
+        let mut gb = GapBuffer::new("scribe\nlibrary".to_string());
         let start = Position{ line: 0, offset: 6 };
         let end = Position{ line: 2, offset: 10 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "scribe");
     }
 
     #[test]
     fn deleting_to_an_out_of_range_column_deletes_to_the_end_of_the_buffer() {
-        let mut gb = new("scribe\nlibrary".to_string());
+        let mut gb = GapBuffer::new("scribe\nlibrary".to_string());
         let start = Position{ line: 0, offset: 0 };
         let end = Position{ line: 0, offset: 100 };
-        gb.delete(&range::new(start, end));
+        gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "library");
     }
 
     #[test]
     fn read_does_not_include_gap_contents_when_gap_is_at_start_of_range() {
         // Create a buffer and a range that captures the first character.
-        let mut gb = new("scribe".to_string());
-        let range = range::new(
+        let mut gb = GapBuffer::new("scribe".to_string());
+        let range = Range::new(
             Position{ line: 0, offset: 0 },
             Position{ line: 0, offset: 1 }
         );
@@ -424,17 +434,17 @@ mod tests {
 
     #[test]
     fn read_does_not_include_gap_contents_when_gap_is_in_middle_of_range() {
-        let mut gb = new("scribe".to_string());
+        let mut gb = GapBuffer::new("scribe".to_string());
 
         // Delete data from the middle of the buffer, which will move the gap there.
-        gb.delete(&range::new(
+        gb.delete(&Range::new(
             Position{ line: 0, offset: 2 },
             Position{ line: 0, offset: 4 }
         ));
         assert_eq!(gb.to_string(), "scbe");
 
         // Request a range that extends from the start to the finish.
-        let range = range::new(
+        let range = Range::new(
             Position{ line: 0, offset: 0 },
             Position{ line: 0, offset: 4 }
         );

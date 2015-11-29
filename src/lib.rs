@@ -1,4 +1,7 @@
 #![feature(pattern)]
 
 pub mod buffer;
-pub mod workspace;
+mod workspace;
+
+pub use buffer::Buffer;
+pub use workspace::Workspace;

@@ -12,11 +12,11 @@ pub use self::cursor::Cursor;
 pub use self::luthor::token::{Token, Category};
 
 // Child modules
-pub mod gap_buffer;
+mod gap_buffer;
 mod position;
-pub mod range;
-pub mod line_range;
-pub mod cursor;
+mod range;
+mod line_range;
+mod cursor;
 mod type_detection;
 mod operation;
 mod operations;
@@ -50,6 +50,92 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    ///
+    /// let buffer = Buffer::new();
+    /// # assert_eq!(buffer.cursor.line, 0);
+    /// # assert_eq!(buffer.cursor.offset, 0);
+    /// ```
+    pub fn new() -> Buffer {
+        let data = Rc::new(RefCell::new(GapBuffer::new(String::new())));
+        let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
+
+        Buffer{
+            data: data.clone(),
+            path: None,
+            cursor: cursor,
+            lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
+            data_cache: None,
+            token_cache: None,
+            history: History::new(),
+            operation_group: None,
+        }
+    }
+
+    /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
+    /// The buffer's cursor is set to the beginning of the buffer. The buffer data's type will be
+    /// inferred based on its extension, and an appropriate lexer will be used, if available (see
+    /// tokens method for further information on why this happens).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use std::path::PathBuf;
+    ///
+    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let mut buffer = Buffer::from_file(file_path).unwrap();
+    /// assert_eq!(buffer.data(), "it works!\n");
+    /// # assert_eq!(buffer.cursor.line, 0);
+    /// # assert_eq!(buffer.cursor.offset, 0);
+    /// ```
+    pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
+        // Try to open and read the file, returning any errors encountered.
+        let mut file = match File::open(path.clone()) {
+            Ok(f) => f,
+            Err(error) => return Err(error),
+        };
+        let mut data = String::new();
+        match file.read_to_string(&mut data) {
+            Ok(_) => (),
+            Err(error) => return Err(error),
+        };
+
+        let data = Rc::new(RefCell::new(GapBuffer::new(data)));
+        let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
+
+        // Detect the file type and use its corresponding lexer, if available.
+        let lexer = match type_detection::from_path(&path) {
+            Some(type_detection::Type::CoffeeScript) => lexers::coffeescript::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::JavaScript) => lexers::javascript::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::JSON) => lexers::json::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::XML) => lexers::xml::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::Ruby) => lexers::ruby::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::Rust) => lexers::rust::lex as fn(&str) -> Vec<Token>,
+            Some(type_detection::Type::ERB) => lexers::html_erb::lex as fn(&str) -> Vec<Token>,
+            _ => lexers::default::lex as fn(&str) -> Vec<Token>,
+        };
+
+        // Create a new buffer using the loaded data, path, and other defaults.
+        Ok(
+            Buffer{
+                data: data.clone(),
+                path: Some(path),
+                cursor: cursor,
+                lexer: lexer,
+                data_cache: None,
+                token_cache: None,
+                history: History::new(),
+                operation_group: None,
+            }
+        )
+    }
+
     /// Returns the contents of the buffer as a string. Caches
     /// this string representation to make subsequent requests
     /// to an unchanged buffer as fast as possible.
@@ -57,7 +143,9 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::new();
+    /// use scribe::Buffer;
+    ///
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe");
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
@@ -78,13 +166,14 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
+    /// use scribe::Buffer;
     /// # use std::path::PathBuf;
     /// # use std::path::Path;
     /// # use std::fs::File;
     /// # use std::io::Read;
     ///
     /// // Set up a buffer and point it to a path.
-    /// let mut buffer = scribe::buffer::new();
+    /// let mut buffer = Buffer::new();
     /// let write_path = PathBuf::from("my_doc");
     /// buffer.path = Some(write_path.clone());
     ///
@@ -129,7 +218,9 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::new();
+    /// use scribe::Buffer;
+    ///
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe data");
     ///
     /// // Build the buffer data string back by combining its token lexemes.
@@ -157,10 +248,11 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
+    /// use scribe::Buffer;
     /// use std::path::PathBuf;
     ///
     /// let file_path = PathBuf::from("tests/sample/file");
-    /// let buffer = scribe::buffer::from_file(file_path).unwrap();
+    /// let buffer = Buffer::from_file(file_path).unwrap();
     /// assert_eq!(buffer.file_name().unwrap(), "file");
     /// ```
     pub fn file_name(&self) -> Option<String> {
@@ -186,12 +278,13 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer;
+    /// use scribe::Buffer;
+    /// use scribe::buffer::Position;
     ///
-    /// let mut buffer = buffer::new();
+    /// let mut buffer = Buffer::new();
     /// // Run an initial insert operation.
     /// buffer.insert("scribe");
-    /// buffer.cursor.move_to(buffer::Position{ line: 0, offset: 6});
+    /// buffer.cursor.move_to(Position{ line: 0, offset: 6});
     ///
     /// // Run a second insert operation.
     /// buffer.insert(" library");
@@ -237,9 +330,9 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer;
+    /// use scribe::Buffer;
     ///
-    /// let mut buffer = buffer::new();
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe");
     ///
     /// buffer.undo();
@@ -267,13 +360,13 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer;
-    /// use scribe::buffer::Position;
+    /// use scribe::Buffer;
+    /// use scribe::buffer::{Position, Range};
     ///
-    /// let mut buffer = buffer::new();
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe");
     ///
-    /// let range = buffer::range::new(
+    /// let range = Range::new(
     ///     Position{ line: 0, offset: 1 },
     ///     Position{ line: 0, offset: 5 }
     /// );
@@ -289,10 +382,10 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer;
+    /// use scribe::Buffer;
     /// use scribe::buffer::Position;
     ///
-    /// let mut buffer = buffer::new();
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe\nlibrary");
     ///
     /// assert_eq!(
@@ -329,98 +422,14 @@ impl Buffer {
     }
 }
 
-/// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
-///
-/// # Examples
-///
-/// ```
-/// let buffer = scribe::buffer::new();
-/// # assert_eq!(buffer.cursor.line, 0);
-/// # assert_eq!(buffer.cursor.offset, 0);
-/// ```
-pub fn new() -> Buffer {
-    let data = Rc::new(RefCell::new(gap_buffer::new(String::new())));
-    let cursor = cursor::new(data.clone(), Position{ line: 0, offset: 0 });
-
-    Buffer{
-        data: data.clone(),
-        path: None,
-        cursor: cursor,
-        lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
-        data_cache: None,
-        token_cache: None,
-        history: operation::history::new(),
-        operation_group: None,
-    }
-}
-
-/// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
-/// The buffer's cursor is set to the beginning of the buffer. The buffer data's type will be
-/// inferred based on its extension, and an appropriate lexer will be used, if available (see
-/// tokens method for further information on why this happens).
-///
-/// # Examples
-///
-/// ```
-/// use std::path::PathBuf;
-///
-/// let file_path = PathBuf::from("tests/sample/file");
-/// let mut buffer = scribe::buffer::from_file(file_path).unwrap();
-/// assert_eq!(buffer.data(), "it works!\n");
-/// # assert_eq!(buffer.cursor.line, 0);
-/// # assert_eq!(buffer.cursor.offset, 0);
-/// ```
-pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
-    // Try to open and read the file, returning any errors encountered.
-    let mut file = match File::open(path.clone()) {
-        Ok(f) => f,
-        Err(error) => return Err(error),
-    };
-    let mut data = String::new();
-    match file.read_to_string(&mut data) {
-        Ok(_) => (),
-        Err(error) => return Err(error),
-    };
-
-    let data = Rc::new(RefCell::new(gap_buffer::new(data)));
-    let cursor = cursor::new(data.clone(), Position{ line: 0, offset: 0 });
-
-    // Detect the file type and use its corresponding lexer, if available.
-    let lexer = match type_detection::from_path(&path) {
-        Some(type_detection::Type::CoffeeScript) => lexers::coffeescript::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::JavaScript) => lexers::javascript::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::JSON) => lexers::json::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::XML) => lexers::xml::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::Ruby) => lexers::ruby::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::Rust) => lexers::rust::lex as fn(&str) -> Vec<Token>,
-        Some(type_detection::Type::ERB) => lexers::html_erb::lex as fn(&str) -> Vec<Token>,
-        _ => lexers::default::lex as fn(&str) -> Vec<Token>,
-    };
-
-    // Create a new buffer using the loaded data, path, and other defaults.
-    Ok(
-        Buffer{
-            data: data.clone(),
-            path: Some(path),
-            cursor: cursor,
-            lexer: lexer,
-            data_cache: None,
-            token_cache: None,
-            history: operation::history::new(),
-            operation_group: None,
-        }
-    )
-}
-
 #[cfg(test)]
 mod tests {
-    use super::new;
-    use buffer::Position;
+    use buffer::{Buffer, Position};
     use super::luthor::token::{Token, Category};
 
     #[test]
     fn tokens_returns_result_of_lexer() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe data");
         let expected_tokens = vec![
             Token{ lexeme: "scribe".to_string(), category: Category::Text },
@@ -432,7 +441,7 @@ mod tests {
 
     #[test]
     fn delete_joins_lines_when_invoked_at_end_of_line() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe\n library");
         buffer.cursor.move_to_end_of_line();
         buffer.delete();
@@ -441,7 +450,7 @@ mod tests {
 
     #[test]
     fn delete_does_nothing_when_invoked_at_the_end_of_the_document() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe\n library");
         buffer.cursor.move_down();
         buffer.cursor.move_to_end_of_line();
@@ -451,7 +460,7 @@ mod tests {
 
     #[test]
     fn insert_clears_data_and_token_caches() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe");
 
         // Trigger data and token cache storage.
@@ -474,7 +483,7 @@ mod tests {
 
     #[test]
     fn delete_clears_data_and_token_caches() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe");
 
         // Trigger data and token cache storage.
@@ -497,7 +506,7 @@ mod tests {
 
     #[test]
     fn insert_is_undoable() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe");
         assert_eq!("scribe", buffer.data());
         buffer.undo();
@@ -506,7 +515,7 @@ mod tests {
 
     #[test]
     fn delete_is_undoable() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
         buffer.insert("scribe");
         assert_eq!("scribe", buffer.data());
 
@@ -520,7 +529,7 @@ mod tests {
 
     #[test]
     fn correctly_called_operation_groups_are_undone_correctly() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
 
         // Run some operations in a group.
         buffer.start_operation_group();
@@ -547,7 +556,7 @@ mod tests {
 
     #[test]
     fn non_terminated_operation_groups_are_undone_correctly() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
 
         // Run an operation outside of the group.
         buffer.insert("scribe");
@@ -573,7 +582,7 @@ mod tests {
 
     #[test]
     fn non_terminated_empty_operation_groups_are_dropped() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
 
         // Run an operation outside of the group.
         buffer.insert("scribe");
@@ -589,7 +598,7 @@ mod tests {
 
     #[test]
     fn search_returns_empty_set_when_there_are_no_matches() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
 
         // Run an operation outside of the group.
         buffer.insert("scribe");
@@ -599,7 +608,7 @@ mod tests {
 
     #[test]
     fn search_does_not_panic_with_non_ascii_data() {
-        let mut buffer = new();
+        let mut buffer = Buffer::new();
 
         // Run an operation outside of the group.
         buffer.insert("scribé");

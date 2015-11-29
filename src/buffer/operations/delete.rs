@@ -1,5 +1,5 @@
 use buffer::operation::Operation;
-use buffer::{Buffer, Position, Range, range};
+use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 
 /// A reversible buffer delete operation.
@@ -42,8 +42,11 @@ impl Operation for Delete {
     }
 }
 
-pub fn new(range: Range) -> Delete {
-    Delete{ content: None, range: range }
+impl Delete {
+    /// Creates a new empty delete operation.
+    pub fn new(range: Range) -> Delete {
+        Delete{ content: None, range: range }
+    }
 }
 
 impl Buffer {
@@ -54,7 +57,9 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
-    /// let mut buffer = scribe::buffer::new();
+    /// use scribe::Buffer;
+    ///
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe");
     /// buffer.delete();
     /// assert_eq!(buffer.data(), "cribe");
@@ -78,7 +83,7 @@ impl Buffer {
         let start = self.cursor.position.clone();
 
         // Now that we've established the range, defer.
-        self.delete_range(range::new(start, end));
+        self.delete_range(Range::new(start, end));
     }
 
     /// Removes a range of characters from the buffer.
@@ -86,14 +91,17 @@ impl Buffer {
     /// # Examples
     ///
     /// ```
+    /// use scribe::Buffer;
+    /// use scribe::buffer::{Position, Range};
+    ///
     /// // Set up an example buffer.
-    /// let mut buffer = scribe::buffer::new();
+    /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe library");
     ///
     /// // Set up the range we'd like to delete.
-    /// let start = scribe::buffer::Position{ line: 0, offset: 6 };
-    /// let end = scribe::buffer::Position{ line: 0, offset: 14 };
-    /// let range = scribe::buffer::range::new(start, end);
+    /// let start = Position{ line: 0, offset: 6 };
+    /// let end = Position{ line: 0, offset: 14 };
+    /// let range = Range::new(start, end);
     ///
     /// buffer.delete_range(range);
     ///
@@ -101,7 +109,7 @@ impl Buffer {
     /// ```
     pub fn delete_range(&mut self, range: Range) {
         // Build and run a delete operation.
-        let mut op = new(range);
+        let mut op = Delete::new(range);
         op.run(self);
 
         // Store the operation in the history
@@ -118,23 +126,23 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
-    use super::new;
-    use buffer::{Position, range};
+    use super::Delete;
+    use buffer::{Buffer, Position, Range};
     use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_remove_and_add_content_without_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert(&"something else");
 
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 0, offset: 9 };
         let end = Position{ line: 0, offset: 14 };
-        let delete_range = range::new(start, end);
+        let delete_range = Range::new(start, end);
 
         // Create the delete operation and run it.
-        let mut delete_operation = super::new(delete_range);
+        let mut delete_operation = Delete::new(delete_range);
         delete_operation.run(&mut buffer);
 
         assert_eq!(buffer.data(), "something");
@@ -147,19 +155,19 @@ mod tests {
     #[test]
     fn run_and_reverse_remove_and_add_content_with_newlines_at_cursor_position() {
         // Set up a buffer with some data.
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert(&"\n something\n else\n entirely");
 
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 1, offset: 10 };
         let end = Position{ line: 3, offset: 9 };
-        let delete_range = range::new(start, end);
+        let delete_range = Range::new(start, end);
 
         // Create the delete operation and run it.
         //
         // NOTE: The newline character ensures that the operation doesn't use a naive
         //       algorithm based purely on the content length.
-        let mut delete_operation = super::new(delete_range);
+        let mut delete_operation = Delete::new(delete_range);
         delete_operation.run(&mut buffer);
 
         assert_eq!(buffer.data(), "\n something");

@@ -40,6 +40,11 @@ impl Operation for OperationGroup {
 }
 
 impl OperationGroup {
+    /// Creates a new empty operation group.
+    pub fn new() -> OperationGroup {
+        OperationGroup{ operations: Vec::new() }
+    }
+
     /// Adds an operation to the group.
     pub fn add(&mut self, operation: Box<Operation>) {
         self.operations.push(operation);
@@ -51,10 +56,6 @@ impl OperationGroup {
     }
 }
 
-pub fn new() -> OperationGroup {
-    OperationGroup{ operations: Vec::new() }
-}
-
 impl Buffer {
     /// Tells the buffer to start tracking operations as a single unit, until
     /// end_operation_group is called. Any calls to insert or delete occurring within
@@ -64,7 +65,7 @@ impl Buffer {
         match self.operation_group {
             Some(_) => (),
             None => {
-                self.operation_group = Some(new());
+                self.operation_group = Some(OperationGroup::new());
             }
         }
     }
@@ -87,19 +88,19 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
-    use super::new;
-    use buffer::operations::insert;
-    use buffer::Position;
+    use super::OperationGroup;
+    use buffer::operations::Insert;
+    use buffer::{Buffer, Position};
     use buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {
-        let mut group = new();
-        let mut buffer = ::buffer::new();
+        let mut group = OperationGroup::new();
+        let mut buffer = Buffer::new();
 
         // Push two insert operations into the group.
-        let first = Box::new(insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
-        let second = Box::new(insert::new(" else".to_string(), Position{ line: 0, offset: 9 }));
+        let first = Box::new(Insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
+        let second = Box::new(Insert::new(" else".to_string(), Position{ line: 0, offset: 9 }));
         group.add(first);
         group.add(second);
 
@@ -116,7 +117,7 @@ mod tests {
 
     #[test]
     fn end_operation_group_drops_group_if_empty() {
-        let mut buffer = ::buffer::new();
+        let mut buffer = Buffer::new();
         buffer.insert("amp");
 
         // Create an empty operation group that

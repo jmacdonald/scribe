@@ -1,4 +1,4 @@
-use buffer::{Position, Range, range};
+use buffer::{Position, Range};
 
 /// A more concise expression for ranges spanning complete lines.
 #[derive(PartialEq, Debug)]
@@ -8,6 +8,16 @@ pub struct LineRange {
 }
 
 impl LineRange {
+    /// Creates a new buffer line range. Checks and swaps
+    /// arguments in the event that the end precedes the start.
+    pub fn new(start: usize, end: usize) -> LineRange {
+        if start < end {
+            LineRange{ start: start, end: end }
+        } else {
+            LineRange{ start: end, end: start }
+        }
+    }
+
     pub fn start(&self) -> usize {
         self.start
     }
@@ -21,19 +31,19 @@ impl LineRange {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer::{line_range, Position, range};
+    /// use scribe::buffer::{LineRange, Position, Range};
     ///
     /// // Build a line range.
-    /// let line_range = line_range::new(10, 14);
+    /// let line_range = LineRange::new(10, 14);
     ///
     /// // Ensure that the resulting range is a zero-based equivalent.
-    /// assert_eq!(line_range.to_range(), range::new(
+    /// assert_eq!(line_range.to_range(), Range::new(
     ///     Position{ line: 10, offset: 0 },
     ///     Position{ line: 14, offset:0 }
     /// ));
     /// ```
     pub fn to_range(&self) -> Range {
-        range::new(
+        Range::new(
             Position{ line: self.start, offset: 0 },
             Position{ line: self.end, offset:0 }
         )
@@ -45,19 +55,19 @@ impl LineRange {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer::{line_range, Position, range};
+    /// use scribe::buffer::{LineRange, Position, Range};
     ///
     /// // Build a line range.
-    /// let line_range = line_range::new(10, 14);
+    /// let line_range = LineRange::new(10, 14);
     ///
     /// // Ensure that the resulting range is a zero-based equivalent.
-    /// assert_eq!(line_range.to_inclusive_range(), range::new(
+    /// assert_eq!(line_range.to_inclusive_range(), Range::new(
     ///     Position{ line: 10, offset: 0 },
     ///     Position{ line: 15, offset:0 }
     /// ));
     /// ```
     pub fn to_inclusive_range(&self) -> Range {
-        range::new(
+        Range::new(
             Position{ line: self.start, offset: 0 },
             Position{ line: self.end+1, offset:0 }
         )
@@ -69,10 +79,10 @@ impl LineRange {
     /// # Examples
     ///
     /// ```
-    /// use scribe::buffer::line_range;
+    /// use scribe::buffer::LineRange;
     ///
     /// // Build a line range.
-    /// let line_range = line_range::new(10, 14);
+    /// let line_range = LineRange::new(10, 14);
     ///
     /// assert!(line_range.includes(11));
     /// assert!(!line_range.includes(14));
@@ -82,21 +92,13 @@ impl LineRange {
     }
 }
 
-pub fn new(start: usize, end: usize) -> LineRange {
-    if start < end {
-        LineRange{ start: start, end: end }
-    } else {
-        LineRange{ start: end, end: start }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::new;
+    use super::LineRange;
 
     #[test]
     fn new_does_not_swap_values_if_end_does_not_precede_start() {
-        let range = new(0, 1);
+        let range = LineRange::new(0, 1);
 
         assert_eq!(range.start(), 0);
         assert_eq!(range.end(), 1);
@@ -104,7 +106,7 @@ mod tests {
 
     #[test]
     fn new_swaps_start_and_end_when_end_precedes_start() {
-        let range = new(1, 0);
+        let range = LineRange::new(1, 0);
 
         assert_eq!(range.start(), 0);
         assert_eq!(range.end(), 1);
