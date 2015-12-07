@@ -1,5 +1,5 @@
 //! Bounds-checked buffer cursor type.
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::cell::RefCell;
 use buffer::{Position, GapBuffer};
@@ -19,6 +19,12 @@ impl Deref for Cursor {
 
     fn deref(&self) -> &Position {
         &self.position
+    }
+}
+
+impl DerefMut for Cursor {
+    fn deref_mut(&mut self) -> &mut Position {
+        &mut self.position
     }
 }
 
