@@ -1,3 +1,7 @@
+### 0.4.1
+
+* Add mutable dereferencing to buffer cursor type.
+
 ### 0.4.0
 
 * Update all types to use type-scoped constructor idiom (e.g. Buffer::new() instead of buffer::new()).
