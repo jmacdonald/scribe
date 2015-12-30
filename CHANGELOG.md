@@ -1,3 +1,11 @@
+### 0.4.3
+
+Added modification tracking to buffers.
+
+### 0.4.2
+
+Renamed start/end of buffer cursor movement methods.
+
 ### 0.4.1
 
 * Add mutable dereferencing to buffer cursor type.
