@@ -64,6 +64,8 @@ impl Buffer {
     pub fn new() -> Buffer {
         let data = Rc::new(RefCell::new(GapBuffer::new(String::new())));
         let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
+        let mut history = History::new();
+        history.mark();
 
         Buffer{
             data: data.clone(),
@@ -122,18 +124,22 @@ impl Buffer {
         };
 
         // Create a new buffer using the loaded data, path, and other defaults.
-        Ok(
-            Buffer{
-                data: data.clone(),
-                path: Some(path),
-                cursor: cursor,
-                lexer: lexer,
-                data_cache: None,
-                token_cache: None,
-                history: History::new(),
-                operation_group: None,
-            }
-        )
+        let mut buffer =  Buffer{
+            data: data.clone(),
+            path: Some(path),
+            cursor: cursor,
+            lexer: lexer,
+            data_cache: None,
+            token_cache: None,
+            history: History::new(),
+            operation_group: None,
+        };
+
+        // We mark the history at points where the
+        // buffer is in sync with its file equivalent.
+        buffer.history.mark();
+
+        Ok(buffer)
     }
 
     /// Returns the contents of the buffer as a string. Caches
@@ -205,6 +211,10 @@ impl Buffer {
             Ok(_) => (),
             Err(error) => return Some(error),
         }
+
+        // We mark the history at points where the
+        // buffer is in sync with its file equivalent.
+        self.history.mark();
 
         return None
     }
@@ -413,6 +423,31 @@ impl Buffer {
         }
 
         results
+    }
+
+    /// Whether or not the buffer has been modified since being read from or
+    /// written to disk. Buffers without paths are always considered modified.
+    ///
+    /// # Examples
+    ///
+    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let mut buffer = Buffer::from_file(file_path).unwrap();
+    ///
+    /// assert!(!buffer.modified());
+    ///
+    /// // Inserting data into a buffer will flag it as modified.
+    /// buffer.insert("scribe");
+    /// assert!(buffer.modified());
+    ///
+    /// // Undoing the modification reverses the flag.
+    /// buffer.undo();
+    /// assert!(!buffer.modified());
+    ///
+    /// // Buffers without paths are always modified.
+    /// buffer = Buffer::new();
+    /// assert!(buffer.modified());
+    pub fn modified(&self) -> bool {
+        !self.history.at_mark()
     }
 
     /// Called when caches are invalidated via buffer modifications.

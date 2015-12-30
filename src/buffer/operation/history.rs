@@ -8,18 +8,30 @@ use buffer::operation::Operation;
 pub struct History {
     previous: Vec<Box<Operation>>,
     next: Vec<Box<Operation>>,
+    marked_position: Option<usize>
 }
 
 impl History {
     /// Creates a new empty operation history.
     pub fn new() -> History {
-        History{ previous: Vec::new(), next: Vec::new() }
+        History{
+            previous: Vec::new(),
+            next: Vec::new(),
+            marked_position: None
+        }
     }
 
     /// Store an operation that has already been run.
     pub fn add(&mut self, operation: Box<Operation>) {
         self.previous.push(operation);
         self.next.clear();
+
+        // Clear marked position if we've replaced a prior operation.
+        if let Some(position) = self.marked_position {
+            if position >= self.previous.len() {
+                self.marked_position = None
+            }
+        }
     }
 
     /// Navigate the history backwards.
@@ -45,6 +57,18 @@ impl History {
                 Some(operation)
             },
             None => None
+        }
+    }
+
+    pub fn mark(&mut self) {
+        self.marked_position = Some(self.previous.len())
+    }
+
+    pub fn at_mark(&self) -> bool {
+        if let Some(position) = self.marked_position {
+            self.previous.len() == position
+        } else {
+            false
         }
     }
 }
@@ -120,5 +144,86 @@ mod tests {
 
         // Ensure there are no redo items.
         assert!(history.next().is_none());
+    }
+
+    #[test]
+    fn marking_the_history_works_without_subsequent_method_calls() {
+        let mut history = History::new();
+        assert!(!history.at_mark());
+        history.mark();
+        assert!(history.at_mark());
+    }
+
+    #[test]
+    fn history_is_not_at_mark_after_adding_an_operation() {
+        let mut history = History::new();
+        history.mark();
+
+        // Add an insert operation to the history.
+        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_operation = Insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        assert!(!history.at_mark());
+    }
+
+    #[test]
+    fn history_is_at_mark_after_adding_and_reversing_an_operation() {
+        let mut history = History::new();
+        history.mark();
+
+        // Add an insert operation to the history.
+        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_operation = Insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        // Reverse the operation.
+        history.previous();
+
+        assert!(history.at_mark());
+    }
+
+    #[test]
+    fn history_is_at_mark_after_toggling_an_operation() {
+        let mut history = History::new();
+
+        // Add an insert operation to the history.
+        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_operation = Insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        // Mark the history.
+        history.mark();
+
+        // Move to before the operation.
+        history.previous();
+
+        // Move to after the operation.
+        history.next();
+
+        assert!(history.at_mark());
+    }
+
+    #[test]
+    fn history_is_not_at_mark_after_replacing_an_operation() {
+        let mut history = History::new();
+
+        // Add an insert operation to the history.
+        let mut insert_position = Position{ line: 0, offset: 0 };
+        let mut insert_operation = Insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        // Mark the history.
+        history.mark();
+
+        // Move to before the operation.
+        history.previous();
+
+        // Add a replacement operation.
+        insert_position = Position{ line: 0, offset: 0 };
+        insert_operation = Insert::new("scribe".to_string(), insert_position);
+        history.add(Box::new(insert_operation));
+
+        assert!(!history.at_mark());
     }
 }
