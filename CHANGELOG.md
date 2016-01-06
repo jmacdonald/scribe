@@ -1,3 +1,7 @@
+### 0.4.4
+
+Implement prefix matching without use of unstable pattern feature.
+
 ### 0.4.3
 
 Added modification tracking to buffers.
