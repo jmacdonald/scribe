@@ -1,5 +1,3 @@
-#![feature(pattern)]
-
 pub mod buffer;
 mod workspace;
 

@@ -31,7 +31,6 @@ use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
 use self::luthor::lexers;
-use std::str::pattern::Pattern;
 
 /// A feature-rich wrapper around an underlying gap buffer.
 ///
@@ -411,7 +410,10 @@ impl Buffer {
 
         for (line, data) in self.data().lines().enumerate() {
             for (offset, _) in data.char_indices() {
-                if needle.is_prefix_of(&data[offset..]) {
+                let haystack = &data[offset..];
+
+                // Check haystack length before slicing it and comparing bytes with needle.
+                if haystack.len() >= needle.len() && needle.as_bytes() == &haystack.as_bytes()[..needle.len()] {
                     results.push(
                         Position{
                             line: line,
@@ -648,6 +650,13 @@ mod tests {
         // Run an operation outside of the group.
         buffer.insert("scribé");
 
+        // Use a longer term than the haystack.
         assert!(buffer.search("library").is_empty());
+
+        // Use a term whose length does not lie on a haystack character boundary.
+        assert!(buffer.search("scribe").is_empty());
+
+        // Use a matching term.
+        assert!(buffer.search("scribé").len() > 0);
     }
 }
