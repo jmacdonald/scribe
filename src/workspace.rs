@@ -18,7 +18,8 @@ impl Workspace {
         Workspace{ path: path, buffers: Vec::new(), current_buffer_index: None }
     }
 
-    /// Adds a buffer to the workspace and selects it.
+    /// Adds a buffer to the workspace, *inserting
+    /// it after the current buffer*, and selects it.
     ///
     /// # Examples
     ///
@@ -39,11 +40,16 @@ impl Workspace {
     /// workspace.add_buffer(buf);
     /// ```
     pub fn add_buffer(&mut self, buf: Buffer) {
-        self.buffers.push(buf);
-        self.current_buffer_index = Some(self.buffers.len()-1);
+        // The target index is directly after the current buffer's index.
+        let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
+
+        // Insert the buffer and select it.
+        self.buffers.insert(target_index, buf);
+        self.current_buffer_index = Some(target_index);
     }
 
-    /// Opens a buffer at the specified path and selects it.
+    /// Opens a buffer at the specified path, *inserting
+    /// it after the current buffer*, and selects it.
     /// If a buffer with the specified path already exists,
     /// it is selected, rather than opening a duplicate buffer.
     /// Any errors encountered while opening the buffer are returned.
@@ -291,6 +297,29 @@ mod tests {
 
         assert_eq!(workspace.buffers.len(), 1);
         assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
+    }
+
+    #[test]
+    fn add_buffer_inserts_the_new_buffer_after_the_current_buffer() {
+        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut buf1 = Buffer::new();
+        let mut buf2 = Buffer::new();
+        let mut buf3 = Buffer::new();
+        buf1.insert("one");
+        buf2.insert("two");
+        buf3.insert("three");
+        workspace.add_buffer(buf1);
+        workspace.add_buffer(buf2);
+
+        // Move to the first buffer.
+        workspace.previous_buffer();
+
+        // Insert the last buffer.
+        workspace.add_buffer(buf3);
+
+        // Make sure the newly inserted buffer was inserted after the current buffer.
+        workspace.previous_buffer();
+        assert_eq!(workspace.current_buffer().unwrap().data(), "one");
     }
 
     #[test]
