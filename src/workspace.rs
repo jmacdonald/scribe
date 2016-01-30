@@ -161,17 +161,14 @@ impl Workspace {
     /// workspace.close_current_buffer();
     /// ```
     pub fn close_current_buffer(&mut self) {
-        match self.current_buffer_index {
-            Some(index) => {
-                self.buffers.remove(index);
+        if let Some(index) = self.current_buffer_index {
+            self.buffers.remove(index);
 
-                if self.buffers.is_empty() {
-                    self.current_buffer_index = None;
-                } else {
-                    self.current_buffer_index = Some(self.buffers.len()-1);
-                }
+            if self.buffers.is_empty() {
+                self.current_buffer_index = None;
+            } else {
+                self.current_buffer_index = index.checked_sub(1).or(Some(0));
             }
-            None => return,
         };
     }
 
@@ -391,22 +388,49 @@ mod tests {
     }
 
     #[test]
-    fn close_current_buffer_when_two_are_open_selects_the_other() {
+    fn close_current_buffer_selects_the_previous_buffer() {
         let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
         let mut second_buffer = Buffer::new();
+        let mut third_buffer = Buffer::new();
         first_buffer.insert("first buffer");
         second_buffer.insert("second buffer");
+        third_buffer.insert("second buffer");
         workspace.add_buffer(first_buffer);
         workspace.add_buffer(second_buffer);
+        workspace.add_buffer(third_buffer);
 
-        // Ensure that the second buffer is currently selected.
-        assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
+        // Select the second buffer to make sure we
+        // don't simply select the last buffer in the set.
+        workspace.previous_buffer();
 
         workspace.close_current_buffer();
         assert_eq!(workspace.current_buffer().unwrap().data(), "first buffer");
+    }
+
+    #[test]
+    fn close_current_buffer_selects_the_next_buffer_when_current_is_at_start() {
+        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+
+        // Create two buffers and add them to the workspace.
+        let mut first_buffer = Buffer::new();
+        let mut second_buffer = Buffer::new();
+        let mut third_buffer = Buffer::new();
+        first_buffer.insert("first buffer");
+        second_buffer.insert("second buffer");
+        third_buffer.insert("second buffer");
+        workspace.add_buffer(first_buffer);
+        workspace.add_buffer(second_buffer);
+        workspace.add_buffer(third_buffer);
+
+        // Select the first buffer.
+        workspace.previous_buffer();
+        workspace.previous_buffer();
+
+        workspace.close_current_buffer();
+        assert_eq!(workspace.current_buffer().unwrap().data(), "second buffer");
     }
 
     #[test]
