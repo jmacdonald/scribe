@@ -1,3 +1,7 @@
+### 0.4.5
+
+Changed workspace open/close buffer methods to work relative to current buffer.
+
 ### 0.4.4
 
 Implement prefix matching without use of unstable pattern feature.
