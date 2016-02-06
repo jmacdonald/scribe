@@ -9,17 +9,24 @@ use std::path::PathBuf;
 pub struct Workspace {
     pub path: PathBuf,
     buffers: Vec<Buffer>,
+    next_buffer_id: usize,
     current_buffer_index: Option<usize>,
 }
 
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
     pub fn new(path: PathBuf) -> Workspace {
-        Workspace{ path: path, buffers: Vec::new(), current_buffer_index: None }
+        Workspace{
+            path: path,
+            buffers: Vec::new(),
+            next_buffer_id: 0,
+            current_buffer_index: None
+        }
     }
 
-    /// Adds a buffer to the workspace, *inserting
-    /// it after the current buffer*, and selects it.
+    /// Adds a buffer to the workspace, *inserting it after the
+    /// current buffer*, populates its `id` field with a unique
+    /// value (relative to the workspace), and selects it.
     ///
     /// # Examples
     ///
@@ -39,7 +46,13 @@ impl Workspace {
     /// let buf = Buffer::from_file(file_path).unwrap();
     /// workspace.add_buffer(buf);
     /// ```
-    pub fn add_buffer(&mut self, buf: Buffer) {
+    pub fn add_buffer(&mut self, mut buf: Buffer) {
+        // Set a unique buffer ID.
+        buf.id = Some(self.next_buffer_id);
+
+        // Increment the ID for the next time.
+        self.next_buffer_id += 1;
+
         // The target index is directly after the current buffer's index.
         let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
 
@@ -317,6 +330,23 @@ mod tests {
         // Make sure the newly inserted buffer was inserted after the current buffer.
         workspace.previous_buffer();
         assert_eq!(workspace.current_buffer().unwrap().data(), "one");
+    }
+
+    #[test]
+    fn add_buffer_populates_buffers_with_unique_id_values() {
+        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let buf1 = Buffer::new();
+        let buf2 = Buffer::new();
+        let buf3 = Buffer::new();
+
+        workspace.add_buffer(buf1);
+        assert_eq!(workspace.current_buffer().unwrap().id.unwrap(), 0);
+
+        workspace.add_buffer(buf2);
+        assert_eq!(workspace.current_buffer().unwrap().id.unwrap(), 1);
+
+        workspace.add_buffer(buf3);
+        assert_eq!(workspace.current_buffer().unwrap().id.unwrap(), 2);
     }
 
     #[test]
