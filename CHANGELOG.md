@@ -1,18 +1,24 @@
+### 0.4.6
+
+* Added `id` field to buffer type.
+* Updated workspace to populate buffer `id` field with a unique value when added
+  to the workspace.
+
 ### 0.4.5
 
-Changed workspace open/close buffer methods to work relative to current buffer.
+* Changed workspace open/close buffer methods to work relative to current buffer.
 
 ### 0.4.4
 
-Implement prefix matching without use of unstable pattern feature.
+* Implement prefix matching without use of unstable pattern feature.
 
 ### 0.4.3
 
-Added modification tracking to buffers.
+* Added modification tracking to buffers.
 
 ### 0.4.2
 
-Renamed start/end of buffer cursor movement methods.
+* Renamed start/end of buffer cursor movement methods.
 
 ### 0.4.1
 
