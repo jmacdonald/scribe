@@ -38,6 +38,7 @@ use self::luthor::lexers;
 /// cursor, undo/redo history, simple type/format detection, and lexing (producing categorized
 /// tokens suitable for syntax-highlighted display).
 pub struct Buffer {
+    pub id: Option<usize>,
     data: Rc<RefCell<GapBuffer>>,
     lexer: fn(&str) -> Vec<Token>,
     pub path: Option<PathBuf>,
@@ -67,6 +68,7 @@ impl Buffer {
         history.mark();
 
         Buffer{
+            id: None,
             data: data.clone(),
             path: None,
             cursor: cursor,
@@ -124,6 +126,7 @@ impl Buffer {
 
         // Create a new buffer using the loaded data, path, and other defaults.
         let mut buffer =  Buffer{
+            id: None,
             data: data.clone(),
             path: Some(path),
             cursor: cursor,
