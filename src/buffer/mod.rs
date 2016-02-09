@@ -414,6 +414,18 @@ impl Buffer {
     pub fn modified(&self) -> bool {
         !self.history.at_mark()
     }
+
+    /// The number of lines in the buffer, including trailing newlines.
+    ///
+    /// # Examples
+    ///
+    /// let mut buffer = Buffer::new();
+    /// buffer.insert("scribe\nlibrary\n");
+    ///
+    /// assert_eq!(buffer.line_count(), 3);
+    pub fn line_count(&self) -> usize {
+        self.data().lines().count()
+    }
 }
 
 #[cfg(test)]
