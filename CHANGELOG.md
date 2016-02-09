@@ -1,3 +1,8 @@
+### 0.4.8
+
+* Fixed buffer doc tests for modified and line_count methods.
+* Update buffer line_count method to handle trailing newlines.
+
 ### 0.4.7
 
 * Removed caching from buffer type's `data` and `tokens` methods, removing
