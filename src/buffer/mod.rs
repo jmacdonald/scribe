@@ -395,6 +395,10 @@ impl Buffer {
     ///
     /// # Examples
     ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use std::path::PathBuf;
+    ///
     /// let file_path = PathBuf::from("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     ///
@@ -411,6 +415,7 @@ impl Buffer {
     /// // Buffers without paths are always modified.
     /// buffer = Buffer::new();
     /// assert!(buffer.modified());
+    /// ```
     pub fn modified(&self) -> bool {
         !self.history.at_mark()
     }
@@ -419,12 +424,16 @@ impl Buffer {
     ///
     /// # Examples
     ///
+    /// ```
+    /// use scribe::Buffer;
+    ///
     /// let mut buffer = Buffer::new();
     /// buffer.insert("scribe\nlibrary\n");
     ///
     /// assert_eq!(buffer.line_count(), 3);
+    /// ```
     pub fn line_count(&self) -> usize {
-        self.data().lines().count()
+        self.data().chars().filter(|&c| c == '\n').count() + 1
     }
 }
 
