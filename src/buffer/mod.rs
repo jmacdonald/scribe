@@ -43,8 +43,6 @@ pub struct Buffer {
     lexer: fn(&str) -> Vec<Token>,
     pub path: Option<PathBuf>,
     pub cursor: Cursor,
-    data_cache: Option<String>,
-    token_cache: Option<Vec<Token>>,
     history: History,
     operation_group: Option<OperationGroup>,
 }
@@ -73,8 +71,6 @@ impl Buffer {
             path: None,
             cursor: cursor,
             lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
-            data_cache: None,
-            token_cache: None,
             history: History::new(),
             operation_group: None,
         }
@@ -131,8 +127,6 @@ impl Buffer {
             path: Some(path),
             cursor: cursor,
             lexer: lexer,
-            data_cache: None,
-            token_cache: None,
             history: History::new(),
             operation_group: None,
         };
@@ -144,9 +138,7 @@ impl Buffer {
         Ok(buffer)
     }
 
-    /// Returns the contents of the buffer as a string. Caches
-    /// this string representation to make subsequent requests
-    /// to an unchanged buffer as fast as possible.
+    /// Returns the contents of the buffer as a string.
     ///
     /// # Examples
     ///
@@ -157,16 +149,8 @@ impl Buffer {
     /// buffer.insert("scribe");
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
-    pub fn data(&mut self) -> String {
-        match self.data_cache {
-            Some(ref cache) => cache.clone(), // Cache hit; return a copy.
-            None => {
-                // Cache miss; update the cache w/ fresh data and return a copy.
-                let data = self.data.borrow().to_string();
-                self.data_cache = Some(data.clone());
-                data
-            }
-        }
+    pub fn data(&self) -> String {
+        self.data.borrow().to_string()
     }
 
     /// Writes the contents of the buffer to its path.
@@ -223,9 +207,7 @@ impl Buffer {
 
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
-    /// buffer data's language and/or format. Caches this
-    /// lexed representation to make subsequent requests
-    /// to an unchanged buffer as fast as possible.
+    /// buffer data's language and/or format.
     ///
     /// # Examples
     ///
@@ -242,16 +224,8 @@ impl Buffer {
     /// }
     /// assert_eq!(data, "scribe data");
     /// ```
-    pub fn tokens(&mut self) -> Vec<Token> {
-        match self.token_cache {
-            Some(ref cache) => cache.clone(), // Cache hit; return a copy.
-            None => {
-                // Cache miss; update the cache w/ fresh tokens and return a copy.
-                let data = (self.lexer)(&self.data());
-                self.token_cache = Some(data.clone());
-                data
-            }
-        }
+    pub fn tokens(&self) -> Vec<Token> {
+        (self.lexer)(&self.data())
     }
 
     /// Returns the file name portion of the buffer's path, if
@@ -325,16 +299,9 @@ impl Buffer {
         };
 
         // If we found an eligible operation, reverse it.
-        match operation {
-            Some(mut op) => {
-                op.reverse(self);
-
-                // Reversing the operation will have modified
-                // the buffer, so we'll want to clear the cache.
-                self.clear_caches();
-            },
-            None => (),
-        };
+        if let Some(mut op) = operation {
+            op.reverse(self);
+        }
     }
 
     /// Re-applies the last undone modification to the buffer.
@@ -355,16 +322,9 @@ impl Buffer {
     /// ```
     pub fn redo(&mut self) {
         // Look for an operation to apply.
-        match self.history.next() {
-            Some(mut op) => {
-                op.run(self);
-
-                // Reversing the operation will have modified
-                // the buffer, so we'll want to clear the cache.
-                self.clear_caches();
-            },
-            None => (),
-        };
+        if let Some(mut op) = self.history.next() {
+            op.run(self);
+        }
     }
 
     /// Tries to read the specified range from the buffer.
@@ -454,12 +414,6 @@ impl Buffer {
     pub fn modified(&self) -> bool {
         !self.history.at_mark()
     }
-
-    /// Called when caches are invalidated via buffer modifications.
-    fn clear_caches(&mut self) {
-        self.data_cache = None;
-        self.token_cache = None;
-    }
 }
 
 #[cfg(test)]
@@ -496,52 +450,6 @@ mod tests {
         buffer.cursor.move_to_end_of_line();
         buffer.delete();
         assert_eq!(buffer.data(), "scribe\n library");
-    }
-
-    #[test]
-    fn insert_clears_data_and_token_caches() {
-        let mut buffer = Buffer::new();
-        buffer.insert("scribe");
-
-        // Trigger data and token cache storage.
-        assert_eq!("scribe", buffer.data());
-        assert_eq!(
-            vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }],
-            buffer.tokens()
-        );
-
-        // Change the buffer contents using delete.
-        buffer.insert("test_");
-
-        // Ensure the cache has been busted.
-        assert_eq!("test_scribe", buffer.data());
-        assert_eq!(
-            vec![Token{ lexeme: "test_scribe".to_string(), category: Category::Text }],
-            buffer.tokens()
-        );
-    }
-
-    #[test]
-    fn delete_clears_data_and_token_caches() {
-        let mut buffer = Buffer::new();
-        buffer.insert("scribe");
-
-        // Trigger data and token cache storage.
-        assert_eq!("scribe", buffer.data());
-        assert_eq!(
-            vec![Token{ lexeme: "scribe".to_string(), category: Category::Text }],
-            buffer.tokens()
-        );
-
-        // Change the buffer contents using delete.
-        buffer.delete();
-
-        // Ensure the cache has been busted.
-        assert_eq!("cribe", buffer.data());
-        assert_eq!(
-            vec![Token{ lexeme: "cribe".to_string(), category: Category::Text }],
-            buffer.tokens()
-        );
     }
 
     #[test]

@@ -20,18 +20,12 @@ impl Operation for Delete {
 
         // Delete the data.
         buffer.data.borrow_mut().delete(&self.range);
-
-        // We've modified the buffer, but it doesn't know that. Bust its cache.
-        buffer.clear_caches()
     }
 
     fn reverse(&mut self, buffer: &mut Buffer) {
         match self.content {
             Some(ref content) => {
                 buffer.data.borrow_mut().insert(content, &self.range.start());
-
-                // We've modified the buffer, but it doesn't know that. Bust its cache.
-                buffer.clear_caches()
             },
             None => (),
         }
@@ -118,9 +112,6 @@ impl Buffer {
             Some(ref mut group) => group.add(Box::new(op)),
             None => self.history.add(Box::new(op)),
         };
-
-        // Caches are invalid as the buffer has changed.
-        self.clear_caches();
     }
 }
 

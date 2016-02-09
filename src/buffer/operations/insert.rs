@@ -16,9 +16,6 @@ pub struct Insert {
 impl Operation for Insert {
     fn run(&mut self, buffer: &mut Buffer) {
         buffer.data.borrow_mut().insert(&self.content, &self.position);
-
-        // We've modified the buffer, but it doesn't know that. Bust its cache.
-        buffer.clear_caches()
     }
 
     // We need to calculate the range of the inserted content.
@@ -56,9 +53,6 @@ impl Operation for Insert {
 
         // Remove the content we'd previously inserted.
         buffer.data.borrow_mut().delete(&range);
-
-        // We've modified the buffer, but it doesn't know that. Bust its cache.
-        buffer.clear_caches()
     }
 
     fn clone_operation(&self) -> Box<Operation> {
@@ -96,9 +90,6 @@ impl Buffer {
             Some(ref mut group) => group.add(Box::new(op)),
             None => self.history.add(Box::new(op)),
         };
-
-        // Caches are invalid as the buffer has changed.
-        self.clear_caches();
     }
 }
 
