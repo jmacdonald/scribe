@@ -1,6 +1,7 @@
 use buffer::operation::Operation;
 use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
+use std::convert::Into;
 
 /// A reversible buffer insert operation.
 ///
@@ -79,9 +80,9 @@ impl Buffer {
     /// buffer.insert("scribe");
     /// assert_eq!(buffer.data(), "scribe");
     /// ```
-    pub fn insert(&mut self, data: &str) {
+    pub fn insert<T: Into<String>>(&mut self, data: T) {
         // Build and run an insert operation.
-        let mut op = Insert::new(data.to_string(), self.cursor.position.clone());
+        let mut op = Insert::new(data.into(), self.cursor.position.clone());
         op.run(self);
 
         // Store the operation in the history
@@ -104,7 +105,7 @@ mod tests {
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        buffer.insert(&"something");
+        buffer.insert("something");
 
         // Set up a position pointing to the end of the buffer's contents.
         let insert_position = Position{ line: 0, offset: 9 };
@@ -124,7 +125,7 @@ mod tests {
     fn run_and_reverse_add_and_remove_content_with_newlines_at_cursor_position() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        buffer.insert(&"\n something");
+        buffer.insert("\n something");
 
         // Set up a position pointing to the end of the buffer's contents.
         let insert_position = Position{ line: 1, offset: 10 };
@@ -159,7 +160,7 @@ mod tests {
     fn reverse_correctly_removes_line_ranges() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        buffer.insert(&"scribe\nlibrary\n");
+        buffer.insert("scribe\nlibrary\n");
 
         let mut insert_operation = Insert::new("editor\n".to_string(), Position{ line: 1, offset: 0 });
         insert_operation.run(&mut buffer);

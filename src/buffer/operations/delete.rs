@@ -125,7 +125,7 @@ mod tests {
     fn run_and_reverse_remove_and_add_content_without_newlines_at_cursor_position() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        buffer.insert(&"something else");
+        buffer.insert("something else");
 
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 0, offset: 9 };
@@ -147,7 +147,7 @@ mod tests {
     fn run_and_reverse_remove_and_add_content_with_newlines_at_cursor_position() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        buffer.insert(&"\n something\n else\n entirely");
+        buffer.insert("\n something\n else\n entirely");
 
         // Set up a range that covers everything after the first word.
         let start = Position{ line: 1, offset: 10 };
