@@ -1,3 +1,10 @@
+### 0.4.7
+
+* Removed caching from buffer type's `data` and `tokens` methods, removing
+  mutability requirements.
+* Added line_count method to buffer type.
+* Updated insert operation to use Into trait rather than converting &str -> String.
+
 ### 0.4.6
 
 * Added `id` field to buffer type.
