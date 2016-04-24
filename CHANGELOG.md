@@ -1,3 +1,7 @@
+### 0.4.9
+
+* Added reload method to buffer type.
+
 ### 0.4.8
 
 * Fixed buffer doc tests for modified and line_count methods.
