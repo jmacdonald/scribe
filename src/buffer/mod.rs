@@ -27,6 +27,7 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
+use std::mem;
 use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
@@ -434,6 +435,36 @@ impl Buffer {
     /// ```
     pub fn line_count(&self) -> usize {
         self.data().chars().filter(|&c| c == '\n').count() + 1
+    }
+
+    /// Reloads the buffer from disk, discarding any in-memory modifications and
+    /// history, as well as resetting the cursor to its initial (0,0) position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::{Buffer, Position};
+    /// use std::path::PathBuf;
+    ///
+    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let mut buffer = Buffer::from_file(file_path).unwrap();
+    /// buffer.insert("scribe\nlibrary\n");
+    /// buffer.reload();
+    ///
+    /// assert_eq!(buffer.data(), "it works!\n");
+    /// assert_eq!(*buffer.cursor, Position{ line: 0, offset: 0 });
+    /// # buffer.undo();
+    /// # assert_eq!(buffer.data(), "it works!\n");
+    /// ```
+    pub fn reload(&mut self) -> io::Result<()> {
+        if let Some(ref path) = self.path.clone() {
+            match Buffer::from_file(path.clone()) {
+                Ok(mut buf) => mem::swap(self, &mut buf),
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(())
     }
 }
 
