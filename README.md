@@ -8,6 +8,6 @@ Provides a layered set of types for dealing with text documents:
 * Buffer - Wrapper that provides bounds-checked cursor management and file persistence.
 * Workspace - Collection of buffers with selection management.
 
-More documentation can be found [here](http://jordanmacdonald.ca/rust/scribe).
+More documentation can be found [here](https://crates.fyi/crates/scribe/).
 
 The buffer type also provides basic type detection and lexing, making use of the lexers provided by the [luthor](https://github.com/jmacdonald/luthor) library.
