@@ -19,6 +19,7 @@ pub fn from_path(path: &Path) -> Option<Type> {
                 Some("coffee") => Some(Type::CoffeeScript),
                 Some("js") => Some(Type::JavaScript),
                 Some("json") => Some(Type::JSON),
+                Some("html") => Some(Type::XML),
                 Some("xml") => Some(Type::XML),
                 Some("rake") => Some(Type::Ruby),
                 Some("rb") => Some(Type::Ruby),
