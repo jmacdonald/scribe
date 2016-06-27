@@ -5,6 +5,7 @@ extern crate luthor;
 
 // Published API
 pub use self::gap_buffer::GapBuffer;
+pub use self::distance::Distance;
 pub use self::position::Position;
 pub use self::range::Range;
 pub use self::line_range::LineRange;
@@ -13,6 +14,7 @@ pub use self::luthor::token::{Token, Category};
 
 // Child modules
 mod gap_buffer;
+mod distance;
 mod position;
 mod range;
 mod line_range;
