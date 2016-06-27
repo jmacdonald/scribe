@@ -1,3 +1,4 @@
+use buffer::Distance;
 use std::cmp::{PartialOrd, Ordering};
 
 /// A two (zero-based) coordinate value representing a location in a buffer.
@@ -30,9 +31,37 @@ impl PartialOrd for Position {
     }
 }
 
+impl Position {
+    /// Adds the specified Distance to the position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::{Distance, Position};
+    ///
+    /// let mut position = Position{ line: 1, offset: 3 };
+    /// let distance = Distance{ lines: 1, offset: 4 };
+    /// position.add(&distance);
+    ///
+    /// assert_eq!(position, Position{
+    ///     line: 2,
+    ///     offset: 4
+    /// });
+    /// ```
+    pub fn add(&mut self, distance: &Distance) {
+        self.line += distance.lines;
+
+        if distance.lines > 0 {
+            self.offset = distance.offset;
+        } else {
+            self.offset += distance.offset;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Position;
+    use buffer::{Distance, Position};
 
     #[test]
     fn compare_works_when_lines_differ() {
@@ -64,5 +93,17 @@ mod tests {
         // derive the PartialEq trait, which provides
         // the implementation for this.
         assert!(earlier_position == later_position);
+    }
+
+    #[test]
+    fn add_works_with_zero_line_distance() {
+        let mut position = Position{ line: 1, offset: 3 };
+        let distance = Distance{ lines: 0, offset: 4 };
+        position.add(&distance);
+
+        assert_eq!(position, Position{
+            line: 1,
+            offset: 7
+        });
     }
 }
