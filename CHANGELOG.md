@@ -1,3 +1,8 @@
+### 0.4.10
+
+* Added Distance relative/vector type.
+* Updated Position type to support adding Distances (via add method).
+
 ### 0.4.9
 
 * Added reload method to buffer type.
