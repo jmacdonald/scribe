@@ -233,8 +233,12 @@ impl Buffer {
     /// }
     /// assert_eq!(data, "scribe data");
     /// ```
-    pub fn tokens(&self) -> TokenIterator {
-        TokenIterator::new(self.data())
+    pub fn tokens(&self) -> Option<TokenIterator> {
+        if let Some(ref def) = self.syntax_definition {
+            Some(TokenIterator::new(self.data(), def))
+        } else {
+            None
+        }
     }
 
     /// Returns the file name portion of the buffer's path, if
