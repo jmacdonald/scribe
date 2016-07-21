@@ -6,6 +6,12 @@ pub struct TokenIterator {
     stack: ScopeStack,
 }
 
+impl TokenIterator {
+    pub fn new(data: String) -> TokenIterator {
+        TokenIterator{ data: data, stack: ScopeStack::new() }
+    }
+}
+
 impl Iterator for TokenIterator {
     type Item = Token;
 

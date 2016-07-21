@@ -10,6 +10,7 @@ pub use self::position::Position;
 pub use self::range::Range;
 pub use self::line_range::LineRange;
 pub use self::cursor::Cursor;
+pub use self::token::token_iterator::TokenIterator;
 pub use self::luthor::token::{Token, Category};
 
 // Child modules
@@ -232,8 +233,8 @@ impl Buffer {
     /// }
     /// assert_eq!(data, "scribe data");
     /// ```
-    pub fn tokens(&self) -> Vec<Token> {
-        (self.lexer)(&self.data())
+    pub fn tokens(&self) -> TokenIterator {
+        TokenIterator::new(self.data())
     }
 
     /// Returns the file name portion of the buffer's path, if
