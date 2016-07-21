@@ -22,6 +22,7 @@ mod cursor;
 mod type_detection;
 mod operation;
 mod operations;
+mod token;
 
 // Buffer type implementation
 use std::rc::Rc;
@@ -34,6 +35,7 @@ use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
 use self::luthor::lexers;
+use syntect::parsing::SyntaxDefinition;
 
 /// A feature-rich wrapper around an underlying gap buffer.
 ///
@@ -48,6 +50,7 @@ pub struct Buffer {
     pub cursor: Cursor,
     history: History,
     operation_group: Option<OperationGroup>,
+    syntax_definition: Option<SyntaxDefinition>,
 }
 
 impl Buffer {
@@ -76,6 +79,7 @@ impl Buffer {
             lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
             history: History::new(),
             operation_group: None,
+            syntax_definition: None,
         }
     }
 
@@ -132,6 +136,7 @@ impl Buffer {
             lexer: lexer,
             history: History::new(),
             operation_group: None,
+            syntax_definition: None,
         };
 
         // We mark the history at points where the

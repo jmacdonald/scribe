@@ -1,3 +1,6 @@
+// Syntax highlighting
+extern crate syntect;
+
 pub mod buffer;
 mod workspace;
 

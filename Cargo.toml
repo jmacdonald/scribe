@@ -12,4 +12,5 @@ license-file = "LICENSE"
 keywords = ["gap", "buffer", "text", "editor", "document"]
 
 [dependencies]
+syntect = "1.0.0"
 luthor = "0.1.7"
