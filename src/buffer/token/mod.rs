@@ -1,4 +1,4 @@
-mod token_iterator;
+pub mod token_iterator;
 
 use syntect::parsing::Scope;
 
