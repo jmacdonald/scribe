@@ -1,14 +1,19 @@
 use buffer::Token;
-use syntect::parsing::ScopeStack;
+use syntect::parsing::{ParseState, ScopeStack, SyntaxDefinition};
 
 pub struct TokenIterator {
     data: String,
     stack: ScopeStack,
+    parser: ParseState
 }
 
 impl TokenIterator {
-    pub fn new(data: String) -> TokenIterator {
-        TokenIterator{ data: data, stack: ScopeStack::new() }
+    pub fn new(data: String, def: &SyntaxDefinition) -> TokenIterator {
+        TokenIterator{
+            data: data,
+            stack: ScopeStack::new(),
+            parser: ParseState::new(def)
+        }
     }
 }
 
