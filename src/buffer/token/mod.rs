@@ -1,10 +1,15 @@
-pub mod line_iterator;
-pub mod token_iterator;
+mod line_iterator;
+mod token_iterator;
+mod token_set;
+
+pub use self::line_iterator::LineIterator;
+pub use self::token_iterator::TokenIterator;
+pub use self::token_set::TokenSet;
 
 use syntect::parsing::Scope;
 
+#[derive(Debug, PartialEq)]
 pub struct Token<'a> {
     pub lexeme: &'a str,
     pub scope: Scope,
-    pub scope_depth: usize,
 }
