@@ -10,8 +10,9 @@ pub use self::position::Position;
 pub use self::range::Range;
 pub use self::line_range::LineRange;
 pub use self::cursor::Cursor;
-pub use self::token::token_iterator::TokenIterator;
-pub use self::luthor::token::{Token, Category};
+pub use self::token::TokenIterator;
+pub use self::token::Token;
+pub use syntect::parsing::Scope;
 
 // Child modules
 mod gap_buffer;
@@ -35,7 +36,7 @@ use std::mem;
 use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
-use self::luthor::lexers;
+use self::token::TokenSet;
 use syntect::parsing::SyntaxDefinition;
 
 /// A feature-rich wrapper around an underlying gap buffer.
@@ -46,7 +47,6 @@ use syntect::parsing::SyntaxDefinition;
 pub struct Buffer {
     pub id: Option<usize>,
     data: Rc<RefCell<GapBuffer>>,
-    lexer: fn(&str) -> Vec<Token>,
     pub path: Option<PathBuf>,
     pub cursor: Cursor,
     history: History,
@@ -77,7 +77,6 @@ impl Buffer {
             data: data.clone(),
             path: None,
             cursor: cursor,
-            lexer: lexers::default::lex as fn(&str) -> Vec<Token>,
             history: History::new(),
             operation_group: None,
             syntax_definition: None,
@@ -116,25 +115,12 @@ impl Buffer {
         let data = Rc::new(RefCell::new(GapBuffer::new(data)));
         let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
 
-        // Detect the file type and use its corresponding lexer, if available.
-        let lexer = match type_detection::from_path(&path) {
-            Some(type_detection::Type::CoffeeScript) => lexers::coffeescript::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::JavaScript) => lexers::javascript::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::JSON) => lexers::json::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::XML) => lexers::xml::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::Ruby) => lexers::ruby::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::Rust) => lexers::rust::lex as fn(&str) -> Vec<Token>,
-            Some(type_detection::Type::ERB) => lexers::html_erb::lex as fn(&str) -> Vec<Token>,
-            _ => lexers::default::lex as fn(&str) -> Vec<Token>,
-        };
-
         // Create a new buffer using the loaded data, path, and other defaults.
         let mut buffer =  Buffer{
             id: None,
             data: data.clone(),
             path: Some(path),
             cursor: cursor,
-            lexer: lexer,
             history: History::new(),
             operation_group: None,
             syntax_definition: None,
@@ -217,25 +203,9 @@ impl Buffer {
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
     /// buffer data's language and/or format.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use scribe::Buffer;
-    ///
-    /// let mut buffer = Buffer::new();
-    /// buffer.insert("scribe data");
-    ///
-    /// // Build the buffer data string back by combining its token lexemes.
-    /// let mut data = String::new();
-    /// for token in buffer.tokens().iter() {
-    ///     data.push_str(&token.lexeme);
-    /// }
-    /// assert_eq!(data, "scribe data");
-    /// ```
-    pub fn tokens(&self) -> Option<TokenIterator> {
+    pub fn tokens(&self) -> Option<TokenSet> {
         if let Some(ref def) = self.syntax_definition {
-            Some(TokenIterator::new(self.data(), def))
+            Some(TokenSet::new(self.data(), def))
         } else {
             None
         }
@@ -484,18 +454,6 @@ impl Buffer {
 mod tests {
     use buffer::{Buffer, Position};
     use super::luthor::token::{Token, Category};
-
-    #[test]
-    fn tokens_returns_result_of_lexer() {
-        let mut buffer = Buffer::new();
-        buffer.insert("scribe data");
-        let expected_tokens = vec![
-            Token{ lexeme: "scribe".to_string(), category: Category::Text },
-            Token{ lexeme: " ".to_string(), category: Category::Whitespace },
-            Token{ lexeme: "data".to_string(), category: Category::Text },
-        ];
-        assert_eq!(buffer.tokens(), expected_tokens);
-    }
 
     #[test]
     fn delete_joins_lines_when_invoked_at_end_of_line() {
