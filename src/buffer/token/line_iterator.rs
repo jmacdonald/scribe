@@ -31,8 +31,6 @@ impl<'a> Iterator for LineIterator<'a> {
             self.end += c.len_utf8();
 
             if c == '\n' {
-                println!("char: {}", c);
-                println!("offset: {}", offset);
                 break;
             }
         }
