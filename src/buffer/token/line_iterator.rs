@@ -1,22 +1,22 @@
 pub struct LineIterator<'a> {
     data: &'a str,
-    start: usize,
-    end: usize,
-    line_number: usize
+    line_number: usize,
+    line_start: usize,
+    line_end: usize
 }
 
 impl<'a> LineIterator<'a> {
     pub fn new<'b>(data: &'b str) -> LineIterator<'b> {
         LineIterator{
             data: data,
-            start: 0,
-            end: 0,
-            line_number: 0
+            line_number: 0,
+            line_start: 0,
+            line_end: 0,
         }
     }
 
     pub fn done(&self) -> bool {
-        self.end == self.data.len()
+        self.line_end == self.data.len()
     }
 }
 
@@ -29,12 +29,12 @@ impl<'a> Iterator for LineIterator<'a> {
         }
 
         // Move the range beyond its previous position.
-        self.start = self.end;
+        self.line_start = self.line_end;
 
         // Find the next line range.
-        for (offset, c) in self.data[self.start..].char_indices() {
+        for (offset, c) in self.data[self.line_start..].char_indices() {
             // Extend the current line range to include this char.
-            self.end += c.len_utf8();
+            self.line_end += c.len_utf8();
 
             if c == '\n' {
                 break;
@@ -42,7 +42,12 @@ impl<'a> Iterator for LineIterator<'a> {
         }
         self.line_number += 1;
 
-        Some((self.line_number-1, &self.data[self.start..self.end]))
+        Some((
+            self.line_number-1,
+            &self.data[
+                self.line_start..self.line_end
+            ]
+        ))
     }
 }
 
