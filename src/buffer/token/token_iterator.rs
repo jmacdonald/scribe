@@ -1,10 +1,9 @@
 use buffer::{Position, Token};
-use syntect::parsing::{ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxDefinition};
+use syntect::parsing::{ParseState, Scope, ScopeStack, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
 use std::vec::IntoIter;
 
 pub struct TokenIterator<'a> {
-    data: &'a str,
     scopes: ScopeStack,
     parser: ParseState,
     line_tokens: Option<IntoIter<Token<'a>>>,
@@ -14,7 +13,6 @@ pub struct TokenIterator<'a> {
 impl<'a> TokenIterator<'a> {
     pub fn new(data: &'a str, def: &SyntaxDefinition) -> TokenIterator<'a> {
         TokenIterator{
-            data: data,
             scopes: ScopeStack::new(),
             parser: ParseState::new(def),
             line_tokens: None,
@@ -121,7 +119,7 @@ mod tests {
     fn token_iterator_returns_correct_tokens() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
         let def = syntax_set.find_syntax_by_extension("rs");
-        let mut iterator = TokenIterator::new("struct Buffer {\ndata: String", def.unwrap());
+        let iterator = TokenIterator::new("struct Buffer {\ndata: String", def.unwrap());
         let expected_tokens = vec![
             Token{
                 lexeme: "struct",

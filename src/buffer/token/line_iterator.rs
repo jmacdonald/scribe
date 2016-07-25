@@ -32,7 +32,7 @@ impl<'a> Iterator for LineIterator<'a> {
         self.line_start = self.line_end;
 
         // Find the next line range.
-        for (offset, c) in self.data[self.line_start..].char_indices() {
+        for c in self.data[self.line_start..].chars() {
             // Extend the current line range to include this char.
             self.line_end += c.len_utf8();
 

@@ -452,7 +452,6 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use buffer::{Buffer, Position};
-    use super::luthor::token::{Token, Category};
 
     #[test]
     fn delete_joins_lines_when_invoked_at_end_of_line() {
