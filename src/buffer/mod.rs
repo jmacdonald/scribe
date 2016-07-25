@@ -21,7 +21,6 @@ mod position;
 mod range;
 mod line_range;
 mod cursor;
-mod type_detection;
 mod operation;
 mod operations;
 mod token;
