@@ -1,12 +1,18 @@
 pub struct LineIterator<'a> {
     data: &'a str,
     start: usize,
-    end: usize
+    end: usize,
+    line_number: usize
 }
 
 impl<'a> LineIterator<'a> {
     pub fn new<'b>(data: &'b str) -> LineIterator<'b> {
-        LineIterator{ data: data, start: 0, end: 0 }
+        LineIterator{
+            data: data,
+            start: 0,
+            end: 0,
+            line_number: 0
+        }
     }
 
     pub fn done(&self) -> bool {
@@ -15,7 +21,7 @@ impl<'a> LineIterator<'a> {
 }
 
 impl<'a> Iterator for LineIterator<'a> {
-    type Item = &'a str;
+    type Item = (usize, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done() {
@@ -34,8 +40,9 @@ impl<'a> Iterator for LineIterator<'a> {
                 break;
             }
         }
+        self.line_number += 1;
 
-        Some(&self.data[self.start..self.end])
+        Some((self.line_number-1, &self.data[self.start..self.end]))
     }
 }
 
@@ -46,8 +53,8 @@ mod tests {
     #[test]
     fn next_includes_trailing_newlines() {
         let mut lines = LineIterator::new("line\nanother line\n");
-        assert_eq!(Some("line\n"), lines.next());
-        assert_eq!(Some("another line\n"), lines.next());
+        assert_eq!(Some((0, "line\n")), lines.next());
+        assert_eq!(Some((1, "another line\n")), lines.next());
     }
 
     #[test]
