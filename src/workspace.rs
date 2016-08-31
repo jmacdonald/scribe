@@ -3,6 +3,7 @@
 use buffer::Buffer;
 use std::io::Error;
 use std::path::PathBuf;
+use syntect::parsing::SyntaxSet;
 
 /// An owned collection of buffers and associated path,
 /// representing a running editor environment.
@@ -11,16 +12,22 @@ pub struct Workspace {
     buffers: Vec<Buffer>,
     next_buffer_id: usize,
     current_buffer_index: Option<usize>,
+    syntax_set: SyntaxSet,
 }
 
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
     pub fn new(path: PathBuf) -> Workspace {
+        // Set up syntax parsers.
+        let mut syntax_set = SyntaxSet::load_defaults_newlines();
+        syntax_set.link_syntaxes();
+
         Workspace{
             path: path,
             buffers: Vec::new(),
             next_buffer_id: 0,
-            current_buffer_index: None
+            current_buffer_index: None,
+            syntax_set: syntax_set,
         }
     }
 
@@ -55,6 +62,15 @@ impl Workspace {
 
         // The target index is directly after the current buffer's index.
         let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
+
+        // Add a syntax definition to the buffer if it doesn't have one.
+        if buf.syntax_definition.is_none() {
+            if let Some(ref path) = buf.path {
+                if let Some(extension) = path.to_str().and_then(|p| p.split('.').last()) {
+                    buf.syntax_definition = self.syntax_set.find_syntax_by_extension(extension).map(|s| s.clone());
+                }
+            }
+        }
 
         // Insert the buffer and select it.
         self.buffers.insert(target_index, buf);
