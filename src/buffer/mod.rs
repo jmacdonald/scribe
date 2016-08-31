@@ -10,8 +10,7 @@ pub use self::position::Position;
 pub use self::range::Range;
 pub use self::line_range::LineRange;
 pub use self::cursor::Cursor;
-pub use self::token::TokenIterator;
-pub use self::token::Token;
+pub use self::token::{Lexeme, Token, TokenSet};
 pub use syntect::parsing::Scope;
 
 // Child modules
@@ -35,7 +34,6 @@ use std::mem;
 use std::path::PathBuf;
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
-use self::token::TokenSet;
 use syntect::parsing::SyntaxDefinition;
 
 /// A feature-rich wrapper around an underlying gap buffer.
@@ -50,7 +48,7 @@ pub struct Buffer {
     pub cursor: Cursor,
     history: History,
     operation_group: Option<OperationGroup>,
-    syntax_definition: Option<SyntaxDefinition>,
+    pub syntax_definition: Option<SyntaxDefinition>,
 }
 
 impl Buffer {
