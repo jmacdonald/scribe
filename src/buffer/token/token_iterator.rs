@@ -1,4 +1,4 @@
-use buffer::{Position, Token};
+use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, Scope, ScopeStack, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
 use std::vec::IntoIter;
@@ -45,6 +45,11 @@ impl<'a> TokenIterator<'a> {
         let mut last_scope: Option<Scope> = None;
 
         if let Some((line_number, line)) = self.lines.next() {
+            if line_number > 0 {
+                // We've found another line, so push a newline token.
+                tokens.push(Token::Newline);
+            }
+
             for (change_offset, scope_change) in self.parser.parse_line(line) {
                 // We only want to capture the deepest scope for a given token,
                 // so we apply all of them and only capture once we move on to
@@ -52,14 +57,14 @@ impl<'a> TokenIterator<'a> {
                 if change_offset > offset {
                     if let Some(scope) = last_scope {
                         tokens.push(
-                            Token{
-                                lexeme: &line[offset..change_offset],
+                            Token::Lexeme(Lexeme{
+                                value: &line[offset..change_offset],
                                 scope: scope.clone(),
                                 position: Position{
                                     line: line_number,
                                     offset: offset
                                 }
-                            }
+                            })
                         );
                         offset = change_offset;
                     }
@@ -74,17 +79,17 @@ impl<'a> TokenIterator<'a> {
 
             // If the rest of the line doesn't trigger a scope
             // change, categorize it with the last known scope.
-            if offset < line.len() - 1 {
+            if offset == 0 || offset < line.len() - 1 {
                 if let Some(scope) = last_scope {
                     tokens.push(
-                        Token{
-                            lexeme: &line[offset..line.len()],
+                        Token::Lexeme(Lexeme{
+                            value: &line[offset..line.len()],
                             scope: scope,
                             position: Position{
                                 line: line_number,
                                 offset: offset
                             }
-                        }
+                        })
                     );
                 }
             }
@@ -112,59 +117,86 @@ impl<'a> Iterator for TokenIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::TokenIterator;
-    use buffer::{Position, Scope, Token};
+    use buffer::{Lexeme, Position, Scope, Token};
     use syntect::parsing::SyntaxSet;
 
     #[test]
     fn token_iterator_returns_correct_tokens() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
         let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("struct Buffer {\ndata: String", def.unwrap());
+        let iterator = TokenIterator::new("struct Buffer {\n  data: String\n\n\n", def.unwrap());
         let expected_tokens = vec![
-            Token{
-                lexeme: "struct",
+            Token::Lexeme(Lexeme{
+                value: "struct",
                 scope: Scope::new("storage.type.struct.rust").unwrap(),
                 position: Position{ line: 0, offset: 0 }
-            },
-            Token{
-                lexeme: " ",
+            }),
+            Token::Lexeme(Lexeme{
+                value: " ",
                 scope: Scope::new("meta.struct.rust").unwrap(),
                 position: Position{ line: 0, offset: 6 }
-            },
-            Token{
-                lexeme: "Buffer",
+            }),
+            Token::Lexeme(Lexeme{
+                value: "Buffer",
                 scope: Scope::new("entity.name.struct.rust").unwrap(),
                 position: Position{ line: 0, offset: 7 }
-            },
-            Token{
-                lexeme: " ",
+            }),
+            Token::Lexeme(Lexeme{
+                value: " ",
                 scope: Scope::new("meta.struct.rust").unwrap(),
                 position: Position{ line: 0, offset: 13 }
-            },
-            Token{
-                lexeme: "{",
+            }),
+            Token::Lexeme(Lexeme{
+                value: "{",
                 scope: Scope::new("punctuation.definition.block.begin.rust").unwrap(),
                 position: Position{ line: 0, offset: 14 }
-            },
-            Token{
-                lexeme: "data",
+            }),
+            Token::Newline,
+            Token::Lexeme(Lexeme{
+                value: "  data",
                 scope: Scope::new("variable.other.property.rust").unwrap(),
                 position: Position{ line: 1, offset: 0 }
-            },
-            Token{
-                lexeme: ":",
+            }),
+            Token::Lexeme(Lexeme{
+                value: ":",
                 scope: Scope::new("punctuation.separator.rust").unwrap(),
-                position: Position{ line: 1, offset: 4 }
-            },
-            Token{
-                lexeme: " String",
+                position: Position{ line: 1, offset: 6 }
+            }),
+            Token::Lexeme(Lexeme{
+                value: " String\n",
                 scope: Scope::new("meta.block.rust").unwrap(),
-                position: Position{ line: 1, offset: 5 }
-            }
+                position: Position{ line: 1, offset: 7 }
+            }),
+            Token::Newline,
+            Token::Newline,
+            Token::Newline
+        ];
+        let actual_tokens: Vec<Token> = iterator.collect();
+        println!("{:?}", actual_tokens);
+        for (index, token) in expected_tokens.into_iter().enumerate() {
+            assert_eq!(token, actual_tokens[index]);
+        }
+
+        //assert_eq!(expected_tokens, actual_tokens);
+    }
+
+    #[test]
+    fn token_iterator_handles_content_without_trailing_newline() {
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let def = syntax_set.find_syntax_by_extension("rs");
+        let iterator = TokenIterator::new("struct", def.unwrap());
+        let expected_tokens = vec![
+            Token::Lexeme(Lexeme{
+                value: "struct",
+                scope: Scope::new("storage.type.struct.rust").unwrap(),
+                position: Position{ line: 0, offset: 0 }
+            })
         ];
         let actual_tokens: Vec<Token> = iterator.collect();
         for (index, token) in expected_tokens.into_iter().enumerate() {
             assert_eq!(token, actual_tokens[index]);
         }
+
+        //assert_eq!(expected_tokens, actual_tokens);
     }
 }

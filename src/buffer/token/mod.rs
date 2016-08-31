@@ -10,8 +10,14 @@ use buffer::Position;
 use syntect::parsing::Scope;
 
 #[derive(Debug, PartialEq)]
-pub struct Token<'a> {
-    pub lexeme: &'a str,
+pub enum Token<'a> {
+  Newline,
+  Lexeme(Lexeme<'a>)
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Lexeme<'a> {
+    pub value: &'a str,
     pub scope: Scope,
     pub position: Position,
 }
