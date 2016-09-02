@@ -77,22 +77,26 @@ impl<'a> TokenIterator<'a> {
 
             }
 
-            // If the rest of the line doesn't trigger a scope
-            // change, categorize it with the last known scope.
-            if offset == 0 || offset < line.len() - 1 {
-                if let Some(scope) = last_scope {
-                    tokens.push(
-                        Token::Lexeme(Lexeme{
-                            value: &line[offset..line.len()],
-                            scope: scope,
-                            position: Position{
-                                line: line_number,
-                                offset: offset
-                            }
-                        })
-                    );
+            // We already have discrete variant for newlines,
+            // so exclude them when considering content length.
+            if let Some(end_of_line) = line.len().checked_sub(1) {
+                if offset < end_of_line {
+                    // The rest of the line hasn't triggered a scope
+                    // change; categorize it with the last known scope.
+                    if let Some(scope) = last_scope {
+                        tokens.push(
+                            Token::Lexeme(Lexeme{
+                                value: &line[offset..end_of_line],
+                                scope: scope,
+                                position: Position{
+                                    line: line_number,
+                                    offset: offset
+                                }
+                            })
+                        );
+                    }
                 }
-            }
+            };
 
             self.line_tokens = Some(tokens.into_iter());
         } else {
@@ -163,7 +167,7 @@ mod tests {
                 position: Position{ line: 1, offset: 6 }
             }),
             Token::Lexeme(Lexeme{
-                value: " String\n",
+                value: " String",
                 scope: Scope::new("meta.block.rust").unwrap(),
                 position: Position{ line: 1, offset: 7 }
             }),
