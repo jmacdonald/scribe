@@ -18,6 +18,6 @@ pub enum Token<'a> {
 #[derive(Debug, PartialEq)]
 pub struct Lexeme<'a> {
     pub value: &'a str,
-    pub scope: Scope,
+    pub scope: Option<Scope>,
     pub position: Position,
 }
