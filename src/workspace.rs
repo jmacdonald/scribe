@@ -3,7 +3,7 @@
 use buffer::Buffer;
 use std::io::Error;
 use std::path::PathBuf;
-use syntect::parsing::SyntaxSet;
+use syntect::parsing::{SyntaxDefinition, SyntaxSet};
 
 /// An owned collection of buffers and associated path,
 /// representing a running editor environment.
@@ -63,13 +63,9 @@ impl Workspace {
         // The target index is directly after the current buffer's index.
         let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
 
-        // Add a syntax definition to the buffer if it doesn't have one.
+        // Add a syntax definition to the buffer, if it doesn't already have one.
         if buf.syntax_definition.is_none() {
-            if let Some(ref path) = buf.path {
-                if let Some(extension) = path.to_str().and_then(|p| p.split('.').last()) {
-                    buf.syntax_definition = self.syntax_set.find_syntax_by_extension(extension).map(|s| s.clone());
-                }
-            }
+            buf.syntax_definition = self.find_syntax_definition(&buf);
         }
 
         // Insert the buffer and select it.
@@ -307,6 +303,22 @@ impl Workspace {
             }
         })
     }
+
+    // Returns a syntax definition based on the buffer's file extension,
+    // falling back to a plain text definition if one cannot be found.
+    fn find_syntax_definition(&self, buffer: &Buffer) -> Option<SyntaxDefinition> {
+        // Find the syntax definition using the buffer's file extension.
+        buffer.path.as_ref().and_then(|path|
+            path.to_str().and_then(|p| p.split('.').last()).and_then(|ex|
+                self.syntax_set.find_syntax_by_extension(ex).and_then(|s|
+                    Some(s.clone())
+                )
+            )
+        ).or(
+            // Fall back to a plain text definition.
+            Some(self.syntax_set.find_syntax_plain_text().clone())
+        )
+    }
 }
 
 #[cfg(test)]
@@ -363,6 +375,34 @@ mod tests {
 
         workspace.add_buffer(buf3);
         assert_eq!(workspace.current_buffer().unwrap().id.unwrap(), 2);
+    }
+
+    #[test]
+    fn add_buffer_populates_buffers_without_paths_using_plain_text_syntax() {
+        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let buf = Buffer::new();
+        workspace.add_buffer(buf);
+
+        let name = workspace
+          .current_buffer()
+          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+
+        assert!(workspace.current_buffer().unwrap().syntax_definition.is_some());
+        assert_eq!(name, Some("Plain Text".to_string()));
+    }
+
+    #[test]
+    fn add_buffer_populates_buffers_with_unknown_extensions_using_plain_text_syntax() {
+        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let buf = Buffer::from_file(PathBuf::from("tests/sample/file"));
+        workspace.add_buffer(buf.unwrap());
+
+        let name = workspace
+          .current_buffer()
+          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+
+        assert!(workspace.current_buffer().unwrap().syntax_definition.is_some());
+        assert_eq!(name, Some("Plain Text".to_string()));
     }
 
     #[test]
