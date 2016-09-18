@@ -42,6 +42,7 @@ impl<'a> TokenIterator<'a> {
     fn parse_next_line(&mut self) {
         let mut tokens = Vec::new();
         let mut offset = 0;
+        let mut last_scope: Option<Scope> = None;
 
         if let Some((line_number, line)) = self.lines.next() {
             if line_number > 0 {
@@ -57,7 +58,7 @@ impl<'a> TokenIterator<'a> {
                     tokens.push(
                         Token::Lexeme(Lexeme{
                             value: &line[offset..change_offset],
-                            scope: self.scopes.as_slice().last().map(|s| s.clone()),
+                            scope: last_scope.clone(),
                             position: Position{
                                 line: line_number,
                                 offset: offset
@@ -70,39 +71,33 @@ impl<'a> TokenIterator<'a> {
                 // Apply the scope and keep a reference to it, so
                 // that we can pair it with a token later on.
                 self.scopes.apply(&scope_change);
+                last_scope = self.scopes.as_slice().last().map(|s| s.clone());
 
             }
 
             // We already have discrete variant for newlines,
             // so exclude them when considering content length.
-            let line_length = line_length(line);
-            if offset < line_length {
-                // The rest of the line hasn't triggered a scope
-                // change; categorize it with the last known scope.
-                tokens.push(
-                    Token::Lexeme(Lexeme{
-                        value: &line[offset..line_length],
-                        scope: self.scopes.as_slice().last().map(|s| s.clone()),
-                        position: Position{
-                            line: line_number,
-                            offset: offset
-                        }
-                    })
-                );
-            }
+            if let Some(end_of_line) = line.len().checked_sub(1) {
+                if offset < end_of_line {
+                    // The rest of the line hasn't triggered a scope
+                    // change; categorize it with the last known scope.
+                    tokens.push(
+                        Token::Lexeme(Lexeme{
+                            value: &line[offset..end_of_line],
+                            scope: last_scope.clone(),
+                            position: Position{
+                                line: line_number,
+                                offset: offset
+                            }
+                        })
+                    );
+                }
+            };
 
             self.line_tokens = Some(tokens.into_iter());
         } else {
             self.line_tokens = None;
         }
-    }
-}
-
-fn line_length(line: &str) -> usize {
-    if line.chars().last() == Some('\n') {
-        line.len() - 1
-    } else {
-        line.len()
     }
 }
 
@@ -129,7 +124,7 @@ mod tests {
     fn token_iterator_returns_correct_tokens() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
         let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("struct Buffer {\n  data: String\n}garbage\n\n", def.unwrap());
+        let iterator = TokenIterator::new("struct Buffer {\n// comment\n  data: String\n}garbage\n\n", def.unwrap());
         let expected_tokens = vec![
             Token::Lexeme(Lexeme{
                 value: "struct",
@@ -158,35 +153,41 @@ mod tests {
             }),
             Token::Newline,
             Token::Lexeme(Lexeme{
-                value: "  ",
-                scope: Some(Scope::new("meta.block.rust").unwrap()),
+                value: "// comment",
+                scope: Some(Scope::new("comment.line.double-slash.rust").unwrap()),
                 position: Position{ line: 1, offset: 0 }
+            }),
+            Token::Newline,
+            Token::Lexeme(Lexeme{
+                value: "  ",
+                scope: None,
+                position: Position{ line: 2, offset: 0 }
             }),
             Token::Lexeme(Lexeme{
                 value: "data",
                 scope: Some(Scope::new("variable.other.property.rust").unwrap()),
-                position: Position{ line: 1, offset: 2 }
+                position: Position{ line: 2, offset: 2 }
             }),
             Token::Lexeme(Lexeme{
                 value: ":",
                 scope: Some(Scope::new("punctuation.separator.rust").unwrap()),
-                position: Position{ line: 1, offset: 6 }
+                position: Position{ line: 2, offset: 6 }
             }),
             Token::Lexeme(Lexeme{
                 value: " String",
                 scope: Some(Scope::new("meta.block.rust").unwrap()),
-                position: Position{ line: 1, offset: 7 }
+                position: Position{ line: 2, offset: 7 }
             }),
             Token::Newline,
             Token::Lexeme(Lexeme{
                 value: "}",
                 scope: Some(Scope::new("punctuation.definition.block.end.rust").unwrap()),
-                position: Position{ line: 2, offset: 0 }
+                position: Position{ line: 3, offset: 0 }
             }),
             Token::Lexeme(Lexeme{
                 value: "garbage",
                 scope: Some(Scope::new("source.rust").unwrap()),
-                position: Position{ line: 2, offset: 1 }
+                position: Position{ line: 3, offset: 1 }
             }),
             Token::Newline,
             Token::Newline
