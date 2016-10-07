@@ -1,6 +1,7 @@
 mod line_iterator;
 mod token_iterator;
 mod token_set;
+mod parser;
 
 pub use self::line_iterator::LineIterator;
 pub use self::token_iterator::TokenIterator;

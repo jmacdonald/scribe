@@ -1,24 +1,21 @@
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
+use buffer::token::parser::Parser;
 
 pub struct TokenIterator<'a> {
-    scopes: ScopeStack,
-    parser: ParseState,
+    parser: Parser,
     lines: LineIterator<'a>,
     current_line: Option<&'a str>,
-    current_position: Position,
     line_events: Vec<(usize, ScopeStackOp)>,
 }
 
 impl<'a> TokenIterator<'a> {
-    pub fn new(data: &'a str, def: &SyntaxDefinition) -> TokenIterator<'a> {
+    pub fn new(data: &'a str, syntax: &SyntaxDefinition) -> TokenIterator<'a> {
         let mut token_iterator = TokenIterator{
-            scopes: ScopeStack::new(),
-            parser: ParseState::new(def),
+            parser: Parser::new(syntax),
             lines: LineIterator::new(data),
             current_line: None,
-            current_position: Position{ line: 0, offset: 0 },
             line_events: Vec::new(),
         };
 
@@ -51,20 +48,20 @@ impl<'a> TokenIterator<'a> {
                 // We want to capture the full scope for a given token, so we
                 // need to make sure we apply all of them and only capture it
                 // once we've moved on to another token/offset.
-                if event_offset > self.current_position.offset {
+                if event_offset > self.parser.position.offset {
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
-                            value: &line[self.current_position.offset..event_offset],
-                            scope: self.scopes.clone(),
-                            position: self.current_position.clone(),
+                            value: &line[self.parser.position.offset..event_offset],
+                            scope: self.parser.scope.clone(),
+                            position: self.parser.position.clone(),
                         })
                     );
-                    self.current_position.offset = event_offset;
+                    self.parser.position.offset = event_offset;
                 }
 
                 // Apply the scope and keep a reference to it, so
                 // that we can pair it with a token later on.
-                self.scopes.apply(&scope_change);
+                self.parser.scope.apply(&scope_change);
 
                 if lexeme.is_some() { return lexeme }
             }
@@ -72,14 +69,14 @@ impl<'a> TokenIterator<'a> {
             // We already have discrete variant for newlines,
             // so exclude them when considering content length.
             if let Some(end_of_line) = line.len().checked_sub(1) {
-                if self.current_position.offset < end_of_line {
+                if self.parser.position.offset < end_of_line {
                     // The rest of the line hasn't triggered a scope
                     // change; categorize it with the last known scope.
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
-                            value: &line[self.current_position.offset..end_of_line],
-                            scope: self.scopes.clone(),
-                            position: self.current_position.clone(),
+                            value: &line[self.parser.position.offset..end_of_line],
+                            scope: self.parser.scope.clone(),
+                            position: self.parser.position.clone(),
                         })
                     );
                 }
@@ -107,7 +104,7 @@ impl<'a> TokenIterator<'a> {
             self.current_line = Some(line);
 
             // Track our position, which we'll pass to generated tokens.
-            self.current_position = Position{ line: line_number, offset: 0 };
+            self.parser.position = Position{ line: line_number, offset: 0 };
         } else {
             self.current_line = None;
         }
