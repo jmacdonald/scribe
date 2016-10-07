@@ -4,7 +4,7 @@ use buffer::token::line_iterator::LineIterator;
 use buffer::token::parser::Parser;
 
 pub struct TokenIterator<'a> {
-    parser: Parser,
+    parser: Parser<'a>,
     lines: LineIterator<'a>,
     current_line: Option<&'a str>,
     line_events: Vec<(usize, ScopeStackOp)>,
@@ -52,8 +52,8 @@ impl<'a> TokenIterator<'a> {
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
                             value: &line[self.parser.position.offset..event_offset],
-                            scope: self.parser.scope.clone(),
-                            position: self.parser.position.clone(),
+                            scope: &self.parser.scope,
+                            position: &self.parser.position,
                         })
                     );
                     self.parser.position.offset = event_offset;
@@ -75,8 +75,8 @@ impl<'a> TokenIterator<'a> {
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
                             value: &line[self.parser.position.offset..end_of_line],
-                            scope: self.parser.scope.clone(),
-                            position: self.parser.position.clone(),
+                            scope: &self.parser.scope,
+                            position: &self.parser.position,
                         })
                     );
                 }
