@@ -1,102 +1,124 @@
 use buffer::{Lexeme, Position, Token};
-use syntect::parsing::{ParseState, Scope, ScopeStack, SyntaxDefinition};
+use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
-use std::vec::IntoIter;
 
 pub struct TokenIterator<'a> {
     scopes: ScopeStack,
     parser: ParseState,
-    line_tokens: Option<IntoIter<Token<'a>>>,
-    lines: LineIterator<'a>
+    lines: LineIterator<'a>,
+    current_line: Option<&'a str>,
+    current_line_number: usize,
+    line_events: Vec<(usize, ScopeStackOp)>,
+    last_event_offset: usize,
 }
 
 impl<'a> TokenIterator<'a> {
     pub fn new(data: &'a str, def: &SyntaxDefinition) -> TokenIterator<'a> {
-        TokenIterator{
+        let mut token_iterator = TokenIterator{
             scopes: ScopeStack::new(),
             parser: ParseState::new(def),
-            line_tokens: None,
-            lines: LineIterator::new(data)
-        }
+            lines: LineIterator::new(data),
+            current_line: None,
+            current_line_number: 0,
+            line_events: Vec::new(),
+            last_event_offset: 0,
+        };
+
+        // Preload the first line
+        token_iterator.parse_next_line();
+
+        token_iterator
     }
 
     fn next_token(&mut self) -> Option<Token<'a>> {
         // Try to fetch a token from the current line.
-        if let Some(ref mut tokens) = self.line_tokens {
-            if let Some(token) = tokens.next() {
-                return Some(token)
-            }
+        if let Some(token) = self.build_next_token() {
+            return Some(token)
         }
 
         // We're done with this line; on to the next.
         self.parse_next_line();
+        if self.current_line.is_some() {
+            Some(Token::Newline)
+        } else {
+            None
+        }
+    }
 
-        // If this returns none, we're done.
-        if let Some(ref mut tokens) = self.line_tokens {
-            tokens.next()
+    fn build_next_token(&mut self) -> Option<Token<'a>> {
+        let mut lexeme = None;
+
+        if let Some(line) = self.current_line {
+            while let Some((event_offset, scope_change)) = self.line_events.pop() {
+                // We only want to capture the deepest scope for a given token,
+                // so we apply all of them and only capture once we move on to
+                // another token/offset.
+                if event_offset > self.last_event_offset {
+                    lexeme = Some(
+                        Token::Lexeme(Lexeme{
+                            value: &line[self.last_event_offset..event_offset],
+                            scope: self.scopes.as_slice().last().map(|s| s.clone()),
+                            position: Position{
+                                line: self.current_line_number,
+                                offset: self.last_event_offset,
+                            }
+                        })
+                    );
+                    self.last_event_offset = event_offset;
+                }
+
+                // Apply the scope and keep a reference to it, so
+                // that we can pair it with a token later on.
+                self.scopes.apply(&scope_change);
+
+                if lexeme.is_some() { return lexeme }
+            }
+
+            // We already have discrete variant for newlines,
+            // so exclude them when considering content length.
+            if let Some(end_of_line) = line.len().checked_sub(1) {
+                if self.last_event_offset < end_of_line {
+                    // The rest of the line hasn't triggered a scope
+                    // change; categorize it with the last known scope.
+                    lexeme = Some(
+                        Token::Lexeme(Lexeme{
+                            value: &line[self.last_event_offset..end_of_line],
+                            scope: self.scopes.as_slice().last().map(|s| s.clone()),
+                            position: Position{
+                                line: self.current_line_number,
+                                offset: self.last_event_offset
+                            }
+                        })
+                    );
+                }
+
+            };
+        }
+        self.current_line = None;
+
+        if lexeme.is_some() {
+            lexeme
         } else {
             None
         }
     }
 
     fn parse_next_line(&mut self) {
-        let mut tokens = Vec::new();
-        let mut offset = 0;
-        let mut last_scope: Option<Scope> = None;
+        // Reset this, since we're starting a new line.
+        self.last_event_offset = 0;
 
         if let Some((line_number, line)) = self.lines.next() {
-            if line_number > 0 {
-                // We've found another line, so push a newline token.
-                tokens.push(Token::Newline);
-            }
+            // We reverse the line elements so that we can pop them off one at a
+            // time, handling each event while allowing us to stop at any point.
+            let mut line_events = self.parser.parse_line(line);
+            line_events.reverse();
+            self.line_events = line_events;
 
-            for (change_offset, scope_change) in self.parser.parse_line(line) {
-                // We only want to capture the deepest scope for a given token,
-                // so we apply all of them and only capture once we move on to
-                // another token/offset.
-                if change_offset > offset {
-                    tokens.push(
-                        Token::Lexeme(Lexeme{
-                            value: &line[offset..change_offset],
-                            scope: last_scope.clone(),
-                            position: Position{
-                                line: line_number,
-                                offset: offset
-                            }
-                        })
-                    );
-                    offset = change_offset;
-                }
-
-                // Apply the scope and keep a reference to it, so
-                // that we can pair it with a token later on.
-                self.scopes.apply(&scope_change);
-                last_scope = self.scopes.as_slice().last().map(|s| s.clone());
-
-            }
-
-            // We already have discrete variant for newlines,
-            // so exclude them when considering content length.
-            if let Some(end_of_line) = line.len().checked_sub(1) {
-                if offset < end_of_line {
-                    // The rest of the line hasn't triggered a scope
-                    // change; categorize it with the last known scope.
-                    tokens.push(
-                        Token::Lexeme(Lexeme{
-                            value: &line[offset..end_of_line],
-                            scope: last_scope.clone(),
-                            position: Position{
-                                line: line_number,
-                                offset: offset
-                            }
-                        })
-                    );
-                }
-            };
-
-            self.line_tokens = Some(tokens.into_iter());
+            // Keep a reference to the line so that we can create slices of it.
+            self.current_line = Some(line);
+            self.current_line_number = line_number;
         } else {
-            self.line_tokens = None;
+            self.current_line = None;
         }
     }
 }
@@ -105,11 +127,6 @@ impl<'a> Iterator for TokenIterator<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(token) = self.next_token() {
-            return Some(token)
-        }
-
-        self.parse_next_line();
         self.next_token()
     }
 }
@@ -160,7 +177,7 @@ mod tests {
             Token::Newline,
             Token::Lexeme(Lexeme{
                 value: "  ",
-                scope: None,
+                scope: Some(Scope::new("meta.block.rust").unwrap()),
                 position: Position{ line: 2, offset: 0 }
             }),
             Token::Lexeme(Lexeme{
@@ -193,7 +210,6 @@ mod tests {
             Token::Newline
         ];
         let actual_tokens: Vec<Token> = iterator.collect();
-        println!("{:?}", actual_tokens);
         for (index, token) in expected_tokens.into_iter().enumerate() {
             assert_eq!(token, actual_tokens[index]);
         }
