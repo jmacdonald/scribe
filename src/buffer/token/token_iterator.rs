@@ -125,8 +125,8 @@ impl<'a> Iterator for TokenIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::TokenIterator;
-    use buffer::{Lexeme, Position, Scope, Token};
-    use syntect::parsing::{ScopeStack, SyntaxSet};
+    use buffer::{Lexeme, Position, ScopeStack, Token};
+    use syntect::parsing::{Scope, SyntaxSet};
 
     #[test]
     fn token_iterator_returns_correct_tokens() {
