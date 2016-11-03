@@ -6,6 +6,7 @@ extern crate luthor;
 // Published API
 pub use self::gap_buffer::GapBuffer;
 pub use self::distance::Distance;
+
 pub use self::position::Position;
 pub use self::range::Range;
 pub use self::line_range::LineRange;
@@ -418,7 +419,7 @@ impl Buffer {
 
     /// Reloads the buffer from disk, discarding any in-memory modifications and
     /// history, as well as resetting the cursor to its initial (0,0) position.
-    /// The buffer's ID is persisted.
+    /// The buffer's ID and syntax definition are persisted.
     ///
     /// # Examples
     ///
@@ -429,12 +430,10 @@ impl Buffer {
     /// let file_path = PathBuf::from("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     /// buffer.insert("scribe\nlibrary\n");
-    /// # buffer.id = Some(1);
     /// buffer.reload();
     ///
     /// assert_eq!(buffer.data(), "it works!\n");
     /// assert_eq!(*buffer.cursor, Position{ line: 0, offset: 0 });
-    /// # assert_eq!(buffer.id, Some(1));
     /// # buffer.undo();
     /// # assert_eq!(buffer.data(), "it works!\n");
     /// ```
@@ -446,6 +445,7 @@ impl Buffer {
 
                     // Restore the buffer's ID.
                     self.id = buf.id;
+                    self.syntax_definition = buf.syntax_definition;
                 },
                 Err(e) => return Err(e),
             }
@@ -457,7 +457,30 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
+    extern crate syntect;
+    use syntect::parsing::SyntaxSet;
+    use std::path::PathBuf;
     use buffer::{Buffer, Position};
+
+    #[test]
+    fn reload_persists_id_and_syntax_definition() {
+        let file_path = PathBuf::from("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+
+        // Load syntax higlighting.
+        let mut syntax_set = SyntaxSet::load_defaults_newlines();
+        syntax_set.link_syntaxes();
+        let syntax_definition = Some(syntax_set.find_syntax_plain_text().clone());
+
+        // Set the attributes we want to verify are persisted.
+        buffer.id = Some(1);
+        buffer.syntax_definition = syntax_definition;
+
+        buffer.reload();
+
+        assert_eq!(buffer.id, Some(1));
+        assert!(buffer.syntax_definition.is_some());
+    }
 
     #[test]
     fn delete_joins_lines_when_invoked_at_end_of_line() {
