@@ -418,6 +418,7 @@ impl Buffer {
 
     /// Reloads the buffer from disk, discarding any in-memory modifications and
     /// history, as well as resetting the cursor to its initial (0,0) position.
+    /// The buffer's ID is persisted.
     ///
     /// # Examples
     ///
@@ -428,17 +429,24 @@ impl Buffer {
     /// let file_path = PathBuf::from("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     /// buffer.insert("scribe\nlibrary\n");
+    /// # buffer.id = Some(1);
     /// buffer.reload();
     ///
     /// assert_eq!(buffer.data(), "it works!\n");
     /// assert_eq!(*buffer.cursor, Position{ line: 0, offset: 0 });
+    /// # assert_eq!(buffer.id, Some(1));
     /// # buffer.undo();
     /// # assert_eq!(buffer.data(), "it works!\n");
     /// ```
     pub fn reload(&mut self) -> io::Result<()> {
         if let Some(ref path) = self.path.clone() {
             match Buffer::from_file(path.clone()) {
-                Ok(mut buf) => mem::swap(self, &mut buf),
+                Ok(mut buf) => {
+                    mem::swap(self, &mut buf);
+
+                    // Restore the buffer's ID.
+                    self.id = buf.id;
+                },
                 Err(e) => return Err(e),
             }
         }
