@@ -16,5 +16,10 @@ fn bench_tokens(b: &mut Bencher) {
 
     // Benchmark the buffer's tokens method.
     let buffer = workspace.current_buffer().unwrap();
-    b.iter(|| buffer.tokens());
+    b.iter(|| {
+        let mut tokens = buffer.tokens().unwrap();
+
+        // Exhaust the token iterator.
+        for _ in tokens.iter() {}
+    });
 }
