@@ -32,6 +32,22 @@ impl PartialOrd for Position {
 }
 
 impl Position {
+    /// Creates a new position with a line/offset of 0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::Position;
+    ///
+    /// let mut position = Position::new();
+    /// assert_eq!(position, Position{
+    ///     line: 0,
+    ///     offset: 0
+    /// });
+    pub fn new() -> Position {
+        Position{ line: 0, offset: 0 }
+    }
+
     /// Adds the specified Distance to the position.
     ///
     /// # Examples
