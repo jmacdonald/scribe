@@ -1,8 +1,8 @@
 //! Buffer and working directory management.
 
 use buffer::Buffer;
-use std::io::Error;
-use std::path::PathBuf;
+use std::io;
+use std::path::{Path, PathBuf};
 use syntect::parsing::{SyntaxDefinition, SyntaxSet};
 
 /// An owned collection of buffers and associated path,
@@ -17,18 +17,18 @@ pub struct Workspace {
 
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
-    pub fn new(path: PathBuf) -> Workspace {
+    pub fn new(path: &Path) -> io::Result<Workspace> {
         // Set up syntax parsers.
         let mut syntax_set = SyntaxSet::load_defaults_newlines();
         syntax_set.link_syntaxes();
 
-        Workspace{
-            path: path,
+        Ok(Workspace{
+            path: path.canonicalize()?,
             buffers: Vec::new(),
             next_buffer_id: 0,
             current_buffer_index: None,
             syntax_set: syntax_set,
-        }
+        })
     }
 
     /// Adds a buffer to the workspace, *inserting it after the
@@ -40,14 +40,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -83,28 +83,29 @@ impl Workspace {
     ///
     /// ```
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Open a buffer in the workspace.
     /// workspace.open_buffer(file_path.clone());
     /// ```
-    pub fn open_buffer(&mut self, path: PathBuf) -> Option<Error> {
-        if self.contains_buffer_with_path(&path) {
+    pub fn open_buffer(&mut self, path: &Path) -> Option<io::Error> {
+        if self.contains_buffer_with_path(path) {
             // We already have this buffer in the workspace.
             // Loop through the buffers until it's selected.
+            let canonical_path = path.canonicalize().unwrap();
             loop {
                 match self.current_buffer() {
                     Some(buffer) => {
                         match buffer.path {
                             Some(ref current_path) => {
-                                if *current_path == path {
+                                if *current_path == canonical_path {
                                     break;
                                 }
                             },
@@ -138,14 +139,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -169,14 +170,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -206,14 +207,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -244,14 +245,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -280,14 +281,14 @@ impl Workspace {
     /// ```
     /// use scribe::Buffer;
     /// use scribe::Workspace;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
     /// // Set up the paths we'll use.
-    /// let directory_path = PathBuf::from("tests/sample");
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path);
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path.clone()).unwrap();
@@ -295,13 +296,17 @@ impl Workspace {
     ///
     /// assert!(workspace.contains_buffer_with_path(&file_path));
     /// ```
-    pub fn contains_buffer_with_path(&self, path: &PathBuf) -> bool {
-        self.buffers.iter().any(|buffer| {
-            match buffer.path {
-                Some(ref buffer_path) => path == buffer_path,
-                None => false,
-            }
-        })
+    pub fn contains_buffer_with_path(&self, path: &Path) -> bool {
+        if let Ok(ref canonical_path) = path.canonicalize() {
+            self.buffers.iter().any(|buffer| {
+                match buffer.path {
+                    Some(ref buffer_path) => buffer_path == canonical_path,
+                    None => false,
+                }
+            })
+        } else {
+            false
+        }
     }
 
     // Returns a syntax definition based on the buffer's file extension,
@@ -325,12 +330,12 @@ impl Workspace {
 mod tests {
     use super::Workspace;
     use buffer::Buffer;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     #[test]
     fn add_buffer_adds_and_selects_the_passed_buffer() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        let buf = Buffer::from_file(PathBuf::from("tests/sample/file")).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let buf = Buffer::from_file(Path::new("tests/sample/file")).unwrap();
         workspace.add_buffer(buf);
 
         assert_eq!(workspace.buffers.len(), 1);
@@ -339,7 +344,7 @@ mod tests {
 
     #[test]
     fn add_buffer_inserts_the_new_buffer_after_the_current_buffer() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let mut buf1 = Buffer::new();
         let mut buf2 = Buffer::new();
         let mut buf3 = Buffer::new();
@@ -362,7 +367,7 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_with_unique_id_values() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf1 = Buffer::new();
         let buf2 = Buffer::new();
         let buf3 = Buffer::new();
@@ -379,7 +384,7 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_without_paths_using_plain_text_syntax() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf = Buffer::new();
         workspace.add_buffer(buf);
 
@@ -393,8 +398,8 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_with_unknown_extensions_using_plain_text_syntax() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        let buf = Buffer::from_file(PathBuf::from("tests/sample/file"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let buf = Buffer::from_file(Path::new("tests/sample/file"));
         workspace.add_buffer(buf.unwrap());
 
         let name = workspace
@@ -407,8 +412,8 @@ mod tests {
 
     #[test]
     fn open_buffer_adds_and_selects_the_buffer_at_the_specified_path() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        workspace.open_buffer(Path::new("tests/sample/file"));
 
         assert_eq!(workspace.buffers.len(), 1);
         assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
@@ -416,17 +421,18 @@ mod tests {
 
     #[test]
     fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        workspace.open_buffer(PathBuf::from("tests/sample/file"));
-        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let thing = Path::new("tests/sample/file");
+        workspace.open_buffer(Path::new("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file"));
 
         assert_eq!(workspace.buffers.len(), 1);
     }
 
     #[test]
     fn open_buffer_selects_buffer_if_it_already_exists_in_workspace() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        workspace.open_buffer(Path::new("tests/sample/file"));
 
         // Add and select another buffer.
         let mut buf = Buffer::new();
@@ -435,7 +441,7 @@ mod tests {
         assert_eq!(workspace.current_buffer().unwrap().data(), "scribe");
 
         // Try to add the first buffer again.
-        workspace.open_buffer(PathBuf::from("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file"));
 
         // Ensure there are only two buffers, and that the
         // one requested via open_buffer is now selected.
@@ -445,28 +451,28 @@ mod tests {
 
     #[test]
     fn current_buffer_returns_none_when_there_are_no_buffers() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         assert!(workspace.current_buffer().is_none());
     }
 
     #[test]
     fn current_buffer_returns_one_when_there_are_buffers() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
-        let buf = Buffer::from_file(PathBuf::from("tests/sample/file")).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let buf = Buffer::from_file(Path::new("tests/sample/file")).unwrap();
         workspace.add_buffer(buf);
         assert!(workspace.current_buffer().is_some());
     }
 
     #[test]
     fn close_current_buffer_does_nothing_when_none_are_open() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.close_current_buffer();
         assert!(workspace.current_buffer().is_none());
     }
 
     #[test]
     fn close_current_buffer_cleans_up_when_only_one_buffer_is_open() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.add_buffer(Buffer::new());
         workspace.close_current_buffer();
         assert!(workspace.current_buffer().is_none());
@@ -475,7 +481,7 @@ mod tests {
 
     #[test]
     fn close_current_buffer_selects_the_previous_buffer() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -498,7 +504,7 @@ mod tests {
 
     #[test]
     fn close_current_buffer_selects_the_next_buffer_when_current_is_at_start() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -521,14 +527,14 @@ mod tests {
 
     #[test]
     fn previous_buffer_does_nothing_when_no_buffers_are_open() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.previous_buffer();
         assert!(workspace.current_buffer().is_none());
     }
 
     #[test]
     fn previous_buffer_when_three_are_open_selects_previous_wrapping_to_last() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -559,14 +565,14 @@ mod tests {
 
     #[test]
     fn next_buffer_does_nothing_when_no_buffers_are_open() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.next_buffer();
         assert!(workspace.current_buffer().is_none());
     }
 
     #[test]
     fn next_buffer_when_three_are_open_selects_next_wrapping_to_first() {
-        let mut workspace = Workspace::new(PathBuf::from("tests/sample"));
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();

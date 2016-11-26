@@ -32,7 +32,7 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
 use syntect::parsing::SyntaxDefinition;
@@ -90,15 +90,15 @@ impl Buffer {
     ///
     /// ```
     /// use scribe::Buffer;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let file_path = Path::new("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     /// assert_eq!(buffer.data(), "it works!\n");
     /// # assert_eq!(buffer.cursor.line, 0);
     /// # assert_eq!(buffer.cursor.offset, 0);
     /// ```
-    pub fn from_file(path: PathBuf) -> io::Result<Buffer> {
+    pub fn from_file(path: &Path) -> io::Result<Buffer> {
         // Try to open and read the file, returning any errors encountered.
         let mut file = match File::open(path.clone()) {
             Ok(f) => f,
@@ -117,7 +117,7 @@ impl Buffer {
         let mut buffer =  Buffer{
             id: None,
             data: data.clone(),
-            path: Some(path),
+            path: Some(path.canonicalize()?),
             cursor: cursor,
             history: History::new(),
             operation_group: None,
@@ -152,8 +152,7 @@ impl Buffer {
     ///
     /// ```
     /// use scribe::Buffer;
-    /// # use std::path::PathBuf;
-    /// # use std::path::Path;
+    /// # use std::path::{Path, PathBuf};
     /// # use std::fs::File;
     /// # use std::io::Read;
     ///
@@ -216,9 +215,9 @@ impl Buffer {
     ///
     /// ```
     /// use scribe::Buffer;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let file_path = Path::new("tests/sample/file");
     /// let buffer = Buffer::from_file(file_path).unwrap();
     /// assert_eq!(buffer.file_name().unwrap(), "file");
     /// ```
@@ -378,9 +377,9 @@ impl Buffer {
     ///
     /// ```
     /// use scribe::Buffer;
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let file_path = Path::new("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     ///
     /// assert!(!buffer.modified());
@@ -425,9 +424,9 @@ impl Buffer {
     ///
     /// ```
     /// use scribe::buffer::{Buffer, Position};
-    /// use std::path::PathBuf;
+    /// use std::path::Path;
     ///
-    /// let file_path = PathBuf::from("tests/sample/file");
+    /// let file_path = Path::new("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     /// buffer.insert("scribe\nlibrary\n");
     /// buffer.reload();
@@ -439,7 +438,7 @@ impl Buffer {
     /// ```
     pub fn reload(&mut self) -> io::Result<()> {
         if let Some(ref path) = self.path.clone() {
-            match Buffer::from_file(path.clone()) {
+            match Buffer::from_file(path) {
                 Ok(mut buf) => {
                     mem::swap(self, &mut buf);
 
@@ -459,12 +458,12 @@ impl Buffer {
 mod tests {
     extern crate syntect;
     use syntect::parsing::SyntaxSet;
-    use std::path::PathBuf;
+    use std::path::Path;
     use buffer::{Buffer, Position};
 
     #[test]
     fn reload_persists_id_and_syntax_definition() {
-        let file_path = PathBuf::from("tests/sample/file");
+        let file_path = Path::new("tests/sample/file");
         let mut buffer = Buffer::from_file(file_path).unwrap();
 
         // Load syntax higlighting.
