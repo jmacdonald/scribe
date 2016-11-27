@@ -95,7 +95,7 @@ impl Workspace {
     /// // Open a buffer in the workspace.
     /// workspace.open_buffer(file_path.clone());
     /// ```
-    pub fn open_buffer(&mut self, path: &Path) -> Option<io::Error> {
+    pub fn open_buffer(&mut self, path: &Path) -> io::Result<()> {
         if self.contains_buffer_with_path(path) {
             // We already have this buffer in the workspace.
             // Loop through the buffers until it's selected.
@@ -119,15 +119,10 @@ impl Workspace {
             }
 
             // Not going to run into IO errors if we're not opening a buffer.
-            None
+            Ok(())
         } else {
-            match Buffer::from_file(path) {
-                Ok(buffer) => {
-                    self.add_buffer(buffer);
-                    None
-                },
-                Err(error) => Some(error),
-            }
+            let buffer = Buffer::from_file(path)?;
+            Ok(self.add_buffer(buffer))
         }
     }
 
