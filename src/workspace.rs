@@ -23,7 +23,7 @@ impl Workspace {
         syntax_set.link_syntaxes();
 
         Ok(Workspace{
-            path: path.canonicalize()?,
+            path: try!(path.canonicalize()),
             buffers: Vec::new(),
             next_buffer_id: 0,
             current_buffer_index: None,
@@ -121,7 +121,7 @@ impl Workspace {
             // Not going to run into IO errors if we're not opening a buffer.
             Ok(())
         } else {
-            let buffer = Buffer::from_file(path)?;
+            let buffer = try!(Buffer::from_file(path));
             Ok(self.add_buffer(buffer))
         }
     }

@@ -117,7 +117,7 @@ impl Buffer {
         let mut buffer =  Buffer{
             id: None,
             data: data.clone(),
-            path: Some(path.canonicalize()?),
+            path: Some(try!(path.canonicalize())),
             cursor: cursor,
             history: History::new(),
             operation_group: None,
@@ -179,10 +179,10 @@ impl Buffer {
         };
 
         // Try to open and write to the file, returning any errors encountered.
-        let mut file = File::create(&path)?;
+        let mut file = try!(File::create(&path));
 
         // We use to_string here because we don't want to write the gap contents.
-        file.write_all(self.data().to_string().as_bytes())?;
+        try!(file.write_all(self.data().to_string().as_bytes()));
 
         // We mark the history at points where the
         // buffer is in sync with its file equivalent.
