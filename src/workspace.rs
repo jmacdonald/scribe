@@ -157,6 +157,38 @@ impl Workspace {
         }
     }
 
+    /// Returns a reference to the current buffer's path,
+    /// relative to the workspace directory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use scribe::Workspace;
+    /// use std::path::Path;
+    ///
+    /// // Set up the paths we'll use.
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
+    ///
+    /// // Create a workspace.
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
+    ///
+    /// // Add a buffer to the workspace.
+    /// let buf = Buffer::from_file(file_path).unwrap();
+    /// workspace.add_buffer(buf);
+    ///
+    /// assert_eq!(workspace.current_buffer_path(), Some(Path::new("file")));
+    /// ```
+    pub fn current_buffer_path(&self) -> Option<&Path> {
+        self.current_buffer_index
+          .and_then(|i| self.buffers[i].path.as_ref()
+              .and_then(|path| path.strip_prefix(&self.path).ok()
+                  .map(|relative_path| relative_path)
+              )
+          )
+    }
+
     /// Removes the currently selected buffer from the collection.
     /// If the workspace is empty, this method does nothing.
     ///
