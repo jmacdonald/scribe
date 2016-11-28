@@ -85,6 +85,8 @@ impl Buffer {
     /// The buffer's cursor is set to the beginning of the buffer. The buffer data's type will be
     /// inferred based on its extension, and an appropriate lexer will be used, if available (see
     /// tokens method for further information on why this happens).
+    /// The provided path is converted to its canonical, absolute equivalent,
+    /// and stored alongside the buffer data.
     ///
     /// # Examples
     ///

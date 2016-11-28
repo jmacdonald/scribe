@@ -75,7 +75,8 @@ impl Workspace {
 
     /// Opens a buffer at the specified path, *inserting
     /// it after the current buffer*, and selects it.
-    /// If a buffer with the specified path already exists,
+    /// The path is converted to its canonical, absolute equivalent;
+    /// if a buffer with the specified path already exists,
     /// it is selected, rather than opening a duplicate buffer.
     /// Any errors encountered while opening the buffer are returned.
     ///
@@ -302,6 +303,7 @@ impl Workspace {
     }
 
     /// Whether or not the workspace contains a buffer with the specified path.
+    /// The path is converted to its canonical, absolute equivalent before comparison.
     ///
     /// # Examples
     ///
