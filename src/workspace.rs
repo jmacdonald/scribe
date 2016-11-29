@@ -451,7 +451,6 @@ mod tests {
     #[test]
     fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
         let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
-        let thing = Path::new("tests/sample/file");
         workspace.open_buffer(Path::new("tests/sample/file"));
         workspace.open_buffer(Path::new("tests/sample/file"));
 
