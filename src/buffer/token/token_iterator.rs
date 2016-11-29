@@ -69,22 +69,24 @@ impl<'a> TokenIterator<'a> {
                 if lexeme.is_some() { return lexeme }
             }
 
-            // We already have discrete variant for newlines,
-            // so exclude them when considering content length.
-            if let Some(end_of_line) = line.len().checked_sub(1) {
-                if self.current_position.offset < end_of_line {
-                    // The rest of the line hasn't triggered a scope
-                    // change; categorize it with the last known scope.
-                    lexeme = Some(
-                        Token::Lexeme(Lexeme{
-                            value: &line[self.current_position.offset..end_of_line],
-                            scope: self.scopes.clone(),
-                            position: self.current_position.clone(),
-                        })
-                    );
-                }
-
+            // Exclude trailing newlines (we have a Newline variant for that).
+            let end_of_line = if line.chars().last() == Some('\n') {
+                line.len() - 1
+            } else {
+                line.len()
             };
+
+            // If the rest of the line hasn't triggered a scope
+            // change; categorize it with the last known scope.
+            if self.current_position.offset < end_of_line {
+                lexeme = Some(
+                    Token::Lexeme(Lexeme{
+                        value: &line[self.current_position.offset..end_of_line],
+                        scope: self.scopes.clone(),
+                        position: self.current_position.clone(),
+                    })
+                );
+            }
         }
         self.current_line = None;
 
@@ -230,15 +232,17 @@ mod tests {
     #[test]
     fn token_iterator_handles_content_without_trailing_newline() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("struct", def.unwrap());
+
+        // It's important to use a plain text lexer so that the last token
+        // doesn't introduce a scope change, forcing the EOL handling logic.
+        let def = syntax_set.find_syntax_plain_text();
+        let iterator = TokenIterator::new("struct", def);
         let mut expected_tokens = Vec::new();
         expected_tokens.push(
             Token::Lexeme(Lexeme{
                 value: "struct",
                 scope: ScopeStack::from_vec(vec![
-                    Scope::new("source.rust").unwrap(),
-                    Scope::new("storage.type.struct.rust").unwrap()
+                    Scope::new("text.plain").unwrap(),
                 ]),
                 position: Position{ line: 0, offset: 0 }
             })
