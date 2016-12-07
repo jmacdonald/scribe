@@ -1,3 +1,14 @@
+### 0.5.0
+
+* Migrated token lexers to syntect-based implementation.
+  * The tokens method now yields a lazily-executed iterable type.
+  * The Token type now contains a position and scope stack (rather than category).
+* Updated Workspace and Buffer types to canonicalize their paths.
+  * Added a current_buffer_path method to the Workspace type, which returns a path relative to the workspace.
+* Replaced Option<io::Error> returns with proper Result types.
+* Fixed an issue where reloading a buffer would not persist its ID.
+* Added a Position constructor.
+
 ### 0.4.10
 
 * Added Distance relative/vector type.
