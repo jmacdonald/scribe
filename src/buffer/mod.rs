@@ -175,16 +175,16 @@ impl Buffer {
     /// # std::fs::remove_file(&write_path);
     /// ```
     pub fn save(&mut self) -> io::Result<()> {
-        let path = match self.path.clone() {
-            Some(p) => p,
-            None => PathBuf::new(),
-        };
-
         // Try to open and write to the file, returning any errors encountered.
-        let mut file = try!(File::create(&path));
+        let mut file =
+            if let Some(ref path) = self.path {
+                File::create(&path)?
+            } else {
+                File::create(&PathBuf::new())?
+            };
 
         // We use to_string here because we don't want to write the gap contents.
-        try!(file.write_all(self.data().to_string().as_bytes()));
+        file.write_all(self.data().to_string().as_bytes())?;
 
         // We mark the history at points where the
         // buffer is in sync with its file equivalent.
