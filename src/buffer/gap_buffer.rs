@@ -3,6 +3,7 @@
 use super::Position;
 use super::Range;
 use std::borrow::Borrow;
+use unicode_segmentation::UnicodeSegmentation;
 
 /// A UTF-8 string buffer designed to minimize reallocations,
 /// maintaining performance amid frequent modifications.
@@ -209,20 +210,18 @@ impl GapBuffer {
 
     // Maps a position to its offset equivalent in the data.
     fn find_offset(&self, position: &Position) -> Option<usize> {
-        let first_half = String::from_utf8_lossy(&self.data[..self.gap_start]).to_owned();
+        let first_half = String::from_utf8_lossy(&self.data[..self.gap_start]);
         let mut line = 0;
         let mut line_offset = 0;
 
-        for char_index in first_half.char_indices() {
-            let (offset, character) = char_index;
-
+        for (offset, grapheme) in (&*first_half).grapheme_indices(true) {
             // Check to see if we've found the position yet.
             if line == position.line && line_offset == position.offset {
                 return Some(offset);
             }
 
             // Advance the line and offset characters.
-            if character == '\n' {
+            if grapheme == "\n" {
                 line+=1;
                 line_offset = 0;
             } else {
@@ -237,17 +236,15 @@ impl GapBuffer {
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
-        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]).to_owned();
-        for char_index in second_half.char_indices() {
-            let (offset, character) = char_index;
-
+        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]);
+        for (offset, grapheme) in (&*second_half).grapheme_indices(true) {
             // Check to see if we've found the position yet.
             if line == position.line && line_offset == position.offset {
                 return Some(self.gap_start + self.gap_length + offset);
             }
 
             // Advance the line and offset characters.
-            if character == '\n' {
+            if grapheme == "\n" {
                 line+=1;
                 line_offset = 0;
             } else {
@@ -362,6 +359,13 @@ mod tests {
     }
 
     #[test]
+    fn inserting_after_a_grapheme_cluster_works() {
+        let mut gb = GapBuffer::new("scribe नी".to_string());
+        gb.insert(" library", &Position{ line : 0, offset: 8 });
+        assert_eq!(gb.to_string(), "scribe नी library");
+    }
+
+    #[test]
     fn deleting_works() {
         let mut gb = GapBuffer::new("This is a test.\nSee what happens.".to_string());
         let start = Position{ line: 0, offset: 8 };
@@ -415,6 +419,15 @@ mod tests {
     }
 
     #[test]
+    fn deleting_after_a_grapheme_cluster_works() {
+        let mut gb = GapBuffer::new("scribe नी library".to_string());
+        let start = Position{ line: 0, offset: 8 };
+        let end = Position{ line: 0, offset: 16 };
+        gb.delete(&Range::new(start, end));
+        assert_eq!(gb.to_string(), "scribe नी");
+    }
+
+    #[test]
     fn read_does_not_include_gap_contents_when_gap_is_at_start_of_range() {
         // Create a buffer and a range that captures the first character.
         let mut gb = GapBuffer::new("scribe".to_string());
@@ -449,5 +462,24 @@ mod tests {
             Position{ line: 0, offset: 4 }
         );
         assert_eq!(gb.read(&range).unwrap(), "scbe");
+    }
+
+    #[test]
+    fn reading_after_a_grapheme_cluster_works() {
+        let mut gb = GapBuffer::new("scribe नी library".to_string());
+        let range = Range::new(
+            Position{ line: 0, offset: 8 },
+            Position{ line: 0, offset: 16 }
+        );
+        assert_eq!(gb.read(&range).unwrap(), " library");
+    }
+
+    #[test]
+    fn in_bounds_considers_grapheme_clusters() {
+        let mut gb = GapBuffer::new("scribe नी library".to_string());
+        let in_bounds = Position{ line: 0, offset: 16 };
+        let out_of_bounds = Position{ line: 0, offset: 17 };
+        assert!(gb.in_bounds(&in_bounds));
+        assert!(!gb.in_bounds(&out_of_bounds));
     }
 }
