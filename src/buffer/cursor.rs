@@ -3,6 +3,7 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::cell::RefCell;
 use buffer::{Position, GapBuffer};
+use unicode_segmentation::UnicodeSegmentation;
 
 /// Read-only wrapper for a `Position`, to allow field level access to a
 /// buffer's cursor while simultaneously enforcing bounds-checking when
@@ -88,7 +89,7 @@ impl Cursor {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
-                    target_offset = line.chars().count();
+                    target_offset = line.graphemes(true).count();
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
@@ -111,7 +112,7 @@ impl Cursor {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
-                    target_offset = line.chars().count();
+                    target_offset = line.graphemes(true).count();
                 }
             }
             self.move_to(Position{ line: target_line, offset: target_offset });
@@ -152,7 +153,7 @@ impl Cursor {
         let current_line = data.lines().nth(self.line);
         match current_line {
             Some(line) => {
-                let new_position = Position{ line: self.line, offset: line.chars().count() };
+                let new_position = Position{ line: self.line, offset: line.graphemes(true).count() };
                 self.move_to(new_position);
             },
             None => (),
@@ -164,8 +165,8 @@ impl Cursor {
         // Figure out the number and length of the last line.
         let mut line = 0;
         let mut length = 0;
-        for c in self.data.borrow().to_string().chars() {
-            if c == '\n' {
+        for c in self.data.borrow().to_string().graphemes(true) {
+            if c == "\n" {
                 line += 1;
                 length = 0;
             } else {
@@ -187,10 +188,14 @@ impl Cursor {
     /// Moves the cursor to the first line in the buffer.
     pub fn move_to_first_line(&mut self) {
         // Figure out the length of the first line.
-        let length = match self.data.borrow().to_string().lines().nth(0) {
-            Some(line_content) => line_content.len(),
-            None => 0
-        };
+        let length = self
+            .data
+            .borrow()
+            .to_string()
+            .lines()
+            .nth(0)
+            .map(|line| line.graphemes(true).count())
+            .unwrap_or(0);
 
         let target_position =
             if length < self.sticky_offset {
@@ -226,6 +231,28 @@ mod tests {
         cursor.move_down();
         assert_eq!(cursor.line, 1);
         assert_eq!(cursor.offset, 15);
+    }
+
+    #[test]
+    fn move_up_counts_graphemes_as_a_single_offset() {
+        let buffer = Rc::new(RefCell::new(GapBuffer::new(
+            "First नी\nSecond line".to_string()
+        )));
+        let mut cursor = Cursor::new(buffer, Position{ line: 1, offset: 11 });
+        cursor.move_up();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 7);
+    }
+
+    #[test]
+    fn move_down_counts_graphemes_as_a_single_offset() {
+        let buffer = Rc::new(RefCell::new(GapBuffer::new(
+            "First line\nSecond नी".to_string()
+        )));
+        let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 10 });
+        cursor.move_down();
+        assert_eq!(cursor.line, 1);
+        assert_eq!(cursor.offset, 8);
     }
 
     #[test]
@@ -274,6 +301,17 @@ mod tests {
     }
 
     #[test]
+    fn move_to_end_of_line_counts_graphemes_as_a_single_offset() {
+        let buffer = Rc::new(RefCell::new(GapBuffer::new(
+            "First नी".to_string()
+        )));
+        let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 0 });
+        cursor.move_to_end_of_line();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 7);
+    }
+
+    #[test]
     fn move_to_end_of_line_sets_offset_the_line_length() {
         let buffer = Rc::new(RefCell::new(GapBuffer::new("This is a test.\nAnother line.".to_string())));
         let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 5 });
@@ -301,6 +339,17 @@ mod tests {
     }
 
     #[test]
+    fn move_to_last_line_counts_graphemes_as_a_single_offset() {
+        let buffer = Rc::new(RefCell::new(GapBuffer::new(
+            "First line\nLast नी".to_string()
+        )));
+        let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 10 });
+        cursor.move_to_last_line();
+        assert_eq!(cursor.line, 1);
+        assert_eq!(cursor.offset, 6);
+    }
+
+    #[test]
     fn move_to_last_line_moves_to_same_offset_on_last_line() {
         let buffer = Rc::new(RefCell::new(GapBuffer::new("first\nsecond\nlast".to_string())));
         let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 2 });
@@ -325,6 +374,17 @@ mod tests {
         cursor.move_to_last_line();
         assert_eq!(cursor.line, 3);
         assert_eq!(cursor.offset, 0);
+    }
+
+    #[test]
+    fn move_to_first_line_counts_graphemes_as_a_single_offset() {
+        let buffer = Rc::new(RefCell::new(GapBuffer::new(
+            "First नी\nLast line".to_string()
+        )));
+        let mut cursor = Cursor::new(buffer, Position{ line: 0, offset: 9 });
+        cursor.move_to_first_line();
+        assert_eq!(cursor.line, 0);
+        assert_eq!(cursor.offset, 7);
     }
 
     #[test]
