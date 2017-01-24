@@ -2,6 +2,7 @@ use buffer::operation::Operation;
 use buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 use std::convert::Into;
+use unicode_segmentation::UnicodeSegmentation;
 
 /// A reversible buffer insert operation.
 ///
@@ -31,15 +32,16 @@ impl Operation for Insert {
         let end_offset = if line_count == 1 {
             // If there's only one line, the range starts and ends on the same line, and so its
             // offset needs to take the original insertion location into consideration.
-            self.position.offset + self.content.chars().count()
+            self.position.offset + self.content.graphemes(true).count()
         } else {
             // If there are multiple lines, the end of the range doesn't
             // need to consider the original insertion location.
             match self.content.split("\n").last() {
-                Some(line) => line.chars().count(),
+                Some(line) => line.graphemes(true).count(),
                 None => return,
             }
         };
+        println!("end offset: {}", end_offset);
 
         // Now that we have the required info,
         // build the end position and total range.
@@ -168,5 +170,33 @@ mod tests {
 
         insert_operation.reverse(&mut buffer);
         assert_eq!(buffer.data(), "scribe\nlibrary\n");
+    }
+
+    #[test]
+    fn reverse_correctly_removes_single_line_content_with_graphemes() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("scribe\nlibrary");
+
+        let mut insert_operation = Insert::new("नी editor ".to_string(), Position{ line: 1, offset: 0 });
+        insert_operation.run(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\nनी editor library");
+
+        insert_operation.reverse(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\nlibrary");
+    }
+
+    #[test]
+    fn reverse_correctly_removes_multi_line_content_with_graphemes() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("scribe\nlibrary");
+
+        let mut insert_operation = Insert::new("\nनी editor".to_string(), Position{ line: 0, offset: 6 });
+        insert_operation.run(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\nनी editor\nlibrary");
+
+        insert_operation.reverse(&mut buffer);
+        assert_eq!(buffer.data(), "scribe\nlibrary");
     }
 }
