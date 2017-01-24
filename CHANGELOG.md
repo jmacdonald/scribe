@@ -1,3 +1,8 @@
+### 0.5.1
+
+* Updated gap buffer, cursor, and insert operation types to support grapheme clusters.
+* Cleaned up buffer save method error handling.
+
 ### 0.5.0
 
 * Migrated token lexers to syntect-based implementation.
