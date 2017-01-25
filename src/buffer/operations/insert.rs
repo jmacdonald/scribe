@@ -41,7 +41,6 @@ impl Operation for Insert {
                 None => return,
             }
         };
-        println!("end offset: {}", end_offset);
 
         // Now that we have the required info,
         // build the end position and total range.
