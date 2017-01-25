@@ -1,3 +1,7 @@
+### 0.5.2
+
+* Remove print call in insert operation reverse method (for shame)
+
 ### 0.5.1
 
 * Updated gap buffer, cursor, and insert operation types to support grapheme clusters.
