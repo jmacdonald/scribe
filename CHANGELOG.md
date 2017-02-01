@@ -1,3 +1,7 @@
+### 0.5.3
+
+* Update syntect dependency to 1.0.4.
+
 ### 0.5.2
 
 * Remove print call in insert operation reverse method (for shame)
