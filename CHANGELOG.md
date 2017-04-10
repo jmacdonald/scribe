@@ -1,3 +1,9 @@
+### 0.5.4
+
+* Updated workspace current_buffer_path method to return the buffer
+  path as-is when it cannot be represented relative to the workspace.
+* Updated dependency specifications to lock both major and minor versions.
+
 ### 0.5.3
 
 * Update syntect dependency to 1.0.4.
