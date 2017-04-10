@@ -158,8 +158,11 @@ impl Workspace {
         }
     }
 
-    /// Returns a reference to the current buffer's path,
-    /// relative to the workspace directory.
+    /// Returns a reference to the current buffer's path.
+    ///
+    /// If the path can be represented relative to the workspace path,
+    /// a relative path will be returned. Otherwise, the buffer path
+    /// is returned as-is.
     ///
     /// # Examples
     ///
@@ -185,7 +188,7 @@ impl Workspace {
         self.current_buffer_index
           .and_then(|i| self.buffers[i].path.as_ref()
               .and_then(|path| path.strip_prefix(&self.path).ok()
-                  .map(|relative_path| relative_path)
+                  .or(Some(path))
               )
           )
     }
@@ -360,6 +363,7 @@ mod tests {
     use super::Workspace;
     use buffer::Buffer;
     use std::path::Path;
+    use std::env;
 
     #[test]
     fn add_buffer_adds_and_selects_the_passed_buffer() {
@@ -489,6 +493,16 @@ mod tests {
         let buf = Buffer::from_file(Path::new("tests/sample/file")).unwrap();
         workspace.add_buffer(buf);
         assert!(workspace.current_buffer().is_some());
+    }
+
+    #[test]
+    fn current_buffer_path_works_with_absolute_paths() {
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let mut buf = Buffer::new();
+        let mut absolute_path = env::current_dir().unwrap();
+        buf.path = Some(absolute_path.clone());
+        workspace.add_buffer(buf);
+        assert_eq!(workspace.current_buffer_path(), Some(absolute_path.as_path()));
     }
 
     #[test]
