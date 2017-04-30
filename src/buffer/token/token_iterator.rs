@@ -1,3 +1,4 @@
+use std::cmp;
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
@@ -47,14 +48,24 @@ impl<'a> TokenIterator<'a> {
         let mut lexeme = None;
 
         if let Some(line) = self.current_line {
+            // Exclude trailing newlines (we have a Newline variant for that).
+            let end_of_line = if line.chars().last() == Some('\n') {
+                line.len() - 1
+            } else {
+                line.len()
+            };
+
             while let Some((event_offset, scope_change)) = self.line_events.pop() {
                 // We want to capture the full scope for a given token, so we
                 // need to make sure we apply all of them and only capture it
                 // once we've moved on to another token/offset.
                 if event_offset > self.current_position.offset {
+                    // Don't include trailing newlines in lexemes.
+                    let end_of_token = cmp::min(event_offset, end_of_line);
+
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
-                            value: &line[self.current_position.offset..event_offset],
+                            value: &line[self.current_position.offset..end_of_token],
                             scope: self.scopes.clone(),
                             position: self.current_position.clone(),
                         })
@@ -68,13 +79,6 @@ impl<'a> TokenIterator<'a> {
 
                 if lexeme.is_some() { return lexeme }
             }
-
-            // Exclude trailing newlines (we have a Newline variant for that).
-            let end_of_line = if line.chars().last() == Some('\n') {
-                line.len() - 1
-            } else {
-                line.len()
-            };
 
             // If the rest of the line hasn't triggered a scope
             // change; categorize it with the last known scope.
@@ -90,11 +94,7 @@ impl<'a> TokenIterator<'a> {
         }
         self.current_line = None;
 
-        if lexeme.is_some() {
-            lexeme
-        } else {
-            None
-        }
+        lexeme
     }
 
     fn parse_next_line(&mut self) {
@@ -173,10 +173,17 @@ mod tests {
         expected_tokens.push(Token::Newline);
         scope_stack.pop();
         scope_stack.push(Scope::new("comment.line.double-slash.rust").unwrap());
+        scope_stack.push(Scope::new("punctuation.definition.comment.rust").unwrap());
         expected_tokens.push(Token::Lexeme(Lexeme{
-            value: "// comment",
+            value: "//",
             scope: scope_stack.clone(),
             position: Position{ line: 1, offset: 0 }
+        }));
+        scope_stack.pop();
+        expected_tokens.push(Token::Lexeme(Lexeme{
+            value: " comment",
+            scope: scope_stack.clone(),
+            position: Position{ line: 1, offset: 2 }
         }));
         expected_tokens.push(Token::Newline);
         scope_stack.pop();
@@ -185,7 +192,7 @@ mod tests {
             scope: scope_stack.clone(),
             position: Position{ line: 2, offset: 0 }
         }));
-        scope_stack.push(Scope::new("variable.other.property.rust").unwrap());
+        scope_stack.push(Scope::new("variable.other.member.rust").unwrap());
         expected_tokens.push(Token::Lexeme(Lexeme{
             value: "data",
             scope: scope_stack.clone(),
