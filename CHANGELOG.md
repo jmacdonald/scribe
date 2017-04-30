@@ -1,3 +1,9 @@
+### 0.5.6
+
+* Updated syntect dependency to 1.3.0.
+* Fixed an issue with the token iterator where, under certain circumstances,
+  trailing newline characters would be included in a lexeme.
+
 ### 0.5.4
 
 * Updated workspace current_buffer_path method to return the buffer
@@ -6,7 +12,7 @@
 
 ### 0.5.3
 
-* Update syntect dependency to 1.0.4.
+* Updated syntect dependency to 1.0.4.
 
 ### 0.5.2
 
