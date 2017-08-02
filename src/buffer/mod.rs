@@ -102,15 +102,9 @@ impl Buffer {
     /// ```
     pub fn from_file(path: &Path) -> io::Result<Buffer> {
         // Try to open and read the file, returning any errors encountered.
-        let mut file = match File::open(path.clone()) {
-            Ok(f) => f,
-            Err(error) => return Err(error),
-        };
+        let mut file = File::open(path.clone())?;
         let mut data = String::new();
-        match file.read_to_string(&mut data) {
-            Ok(_) => (),
-            Err(error) => return Err(error),
-        };
+        file.read_to_string(&mut data)?;
 
         let data = Rc::new(RefCell::new(GapBuffer::new(data)));
         let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
