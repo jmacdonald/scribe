@@ -12,7 +12,7 @@ pub use self::range::Range;
 pub use self::line_range::LineRange;
 pub use self::cursor::Cursor;
 pub use self::token::{Lexeme, Token, TokenSet};
-pub use syntect::parsing::ScopeStack;
+pub use syntect::parsing::{Scope, ScopeStack};
 
 // Child modules
 mod gap_buffer;
@@ -196,6 +196,58 @@ impl Buffer {
         } else {
             None
         }
+    }
+
+    /// Returns the scope stack for the token at the cursor location.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use scribe::buffer::{Position, Scope, ScopeStack};
+    /// # use scribe::Workspace;
+    /// # use std::path::PathBuf;
+    /// # use std::env;
+    ///
+    /// // Set up a buffer with Rust source content and
+    /// // move the cursor to something of interest.
+    /// let mut buffer = Buffer::new();
+    /// buffer.insert("struct Buffer");
+    /// buffer.cursor.move_to(Position{ line: 0, offset: 7 });
+    ///
+    /// // Omitted code to set up workspace / buffer syntax definition.
+    /// # let path = PathBuf::from("file.rs");
+    /// # buffer.path = Some(path);
+    /// # let mut workspace = Workspace::new(&env::current_dir().unwrap()).unwrap();
+    /// # workspace.add_buffer(buffer);
+    /// #
+    /// assert_eq!(
+    ///     workspace.current_buffer().unwrap().current_scope(),
+    ///     Some(ScopeStack::from_vec(
+    ///         vec![
+    ///             Scope::new("source.rust").unwrap(),
+    ///             Scope::new("meta.struct.rust").unwrap(),
+    ///             Scope::new("entity.name.struct.rust").unwrap()
+    ///         ]
+    ///     ))
+    /// );
+    /// ```
+    pub fn current_scope(&self) -> Option<ScopeStack> {
+        let mut scope = None;
+
+        if let Some(tokens) = self.tokens() {
+            for token in tokens.iter() {
+                if let Token::Lexeme(lexeme) = token {
+                    if lexeme.position > *self.cursor {
+                        return scope
+                    }
+
+                    scope = Some(lexeme.scope);
+                }
+            }
+        }
+
+        scope
     }
 
     /// Returns the file name portion of the buffer's path, if
