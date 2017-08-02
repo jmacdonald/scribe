@@ -164,7 +164,7 @@ mod tests {
             position: Position{ line: 0, offset: 13 }
         }));
         scope_stack.push(Scope::new("meta.block.rust").unwrap());
-        scope_stack.push(Scope::new("punctuation.definition.block.begin.rust").unwrap());
+        scope_stack.push(Scope::new("punctuation.section.block.begin.rust").unwrap());
         expected_tokens.push(Token::Lexeme(Lexeme{
             value: "{",
             scope: scope_stack.clone(),
@@ -212,7 +212,7 @@ mod tests {
             position: Position{ line: 2, offset: 7 }
         }));
         expected_tokens.push(Token::Newline);
-        scope_stack.push(Scope::new("punctuation.definition.block.end.rust").unwrap());
+        scope_stack.push(Scope::new("punctuation.section.block.end.rust").unwrap());
         expected_tokens.push(Token::Lexeme(Lexeme{
             value: "}",
             scope: scope_stack.clone(),
