@@ -26,6 +26,7 @@ mod operations;
 mod token;
 
 // Buffer type implementation
+use errors::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::fs::File;
@@ -190,11 +191,11 @@ impl Buffer {
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
     /// buffer data's language and/or format.
-    pub fn tokens(&self) -> Option<TokenSet> {
+    pub fn tokens(&self) -> Result<TokenSet> {
         if let Some(ref def) = self.syntax_definition {
-            Some(TokenSet::new(self.data(), def))
+            Ok(TokenSet::new(self.data(), def))
         } else {
-            None
+            Err(ErrorKind::MissingSyntaxDefinition)?
         }
     }
 
@@ -222,32 +223,31 @@ impl Buffer {
     /// # workspace.add_buffer(buffer);
     /// #
     /// assert_eq!(
-    ///     workspace.current_buffer().unwrap().current_scope(),
-    ///     Some(ScopeStack::from_vec(
+    ///     workspace.current_buffer().unwrap().current_scope().unwrap(),
+    ///     ScopeStack::from_vec(
     ///         vec![
     ///             Scope::new("source.rust").unwrap(),
     ///             Scope::new("meta.struct.rust").unwrap(),
     ///             Scope::new("entity.name.struct.rust").unwrap()
     ///         ]
-    ///     ))
+    ///     )
     /// );
     /// ```
-    pub fn current_scope(&self) -> Option<ScopeStack> {
+    pub fn current_scope(&self) -> Result<ScopeStack> {
         let mut scope = None;
+        let tokens = self.tokens()?;
 
-        if let Some(tokens) = self.tokens() {
-            for token in tokens.iter() {
-                if let Token::Lexeme(lexeme) = token {
-                    if lexeme.position > *self.cursor {
-                        return scope
-                    }
-
-                    scope = Some(lexeme.scope);
+        for token in tokens.iter() {
+            if let Token::Lexeme(lexeme) = token {
+                if lexeme.position > *self.cursor {
+                    break;
                 }
+
+                scope = Some(lexeme.scope);
             }
         }
 
-        scope
+        scope.ok_or(ErrorKind::MissingScope.into())
     }
 
     /// Returns the file name portion of the buffer's path, if
