@@ -1,3 +1,12 @@
+### 0.5.7
+
+* Updated syntect dependency to 1.7.1.
+* Added a new current_scope method to the Buffer type, which will return the
+  scope stack at the cursor position.
+* Updated the Buffer tokens method to return a MissingSyntaxDefinition error
+  when a syntax hasn't been configured for the buffer. This will provide more
+  context to consumers when we're unable to return a TokenSet.
+
 ### 0.5.6
 
 * Updated syntect dependency to 1.3.0.
