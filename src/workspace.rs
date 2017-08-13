@@ -12,7 +12,7 @@ pub struct Workspace {
     buffers: Vec<Buffer>,
     next_buffer_id: usize,
     current_buffer_index: Option<usize>,
-    syntax_set: SyntaxSet,
+    pub syntax_set: SyntaxSet,
 }
 
 impl Workspace {
