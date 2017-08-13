@@ -1,3 +1,8 @@
+### 0.5.8
+
+* Expose the `Workspace` type's `syntax_set` field. This allows augmenting the
+  default syntax definition set with additional entries.
+
 ### 0.5.7
 
 * Updated syntect dependency to 1.7.1.
