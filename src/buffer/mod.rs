@@ -238,7 +238,7 @@ impl Buffer {
         let tokens = self.tokens()?;
 
         for token in tokens.iter() {
-            if let Token::Lexeme(lexeme) = token {
+            if let Token::Lexeme(lexeme) = token? {
                 if lexeme.position > *self.cursor {
                     break;
                 }

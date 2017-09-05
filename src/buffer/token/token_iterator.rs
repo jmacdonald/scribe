@@ -1,3 +1,4 @@
+use errors::*;
 use std::cmp;
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
@@ -14,7 +15,7 @@ pub struct TokenIterator<'a> {
 
 impl<'a> TokenIterator<'a> {
     pub fn new(data: &'a str, def: &SyntaxDefinition) -> TokenIterator<'a> {
-        let mut token_iterator = TokenIterator{
+        let token_iterator = TokenIterator{
             scopes: ScopeStack::new(),
             parser: ParseState::new(def),
             lines: LineIterator::new(data),
@@ -23,22 +24,28 @@ impl<'a> TokenIterator<'a> {
             line_events: Vec::new(),
         };
 
-        // Preload the first line
-        token_iterator.parse_next_line();
-
         token_iterator
     }
 
-    fn next_token(&mut self) -> Option<Token<'a>> {
+    fn next_token(&mut self) -> Option<Result<Token<'a>>> {
         // Try to fetch a token from the current line.
         if let Some(token) = self.build_next_token() {
-            return Some(token)
+            return Some(Ok(token))
         }
 
         // We're done with this line; on to the next.
-        self.parse_next_line();
+        if let Err(e) = self.parse_next_line() {
+            return Some(Err(e.into()));
+        }
+
         if self.current_line.is_some() {
-            Some(Token::Newline)
+            if self.current_position == Position::new() {
+                // This is the first run, trigger this method
+                // again, now that we've parsed the first line.
+                self.next_token()
+            } else {
+                Some(Ok(Token::Newline))
+            }
         } else {
             None
         }
@@ -97,11 +104,11 @@ impl<'a> TokenIterator<'a> {
         lexeme
     }
 
-    fn parse_next_line(&mut self) {
+    fn parse_next_line(&mut self) -> Result<()> {
         if let Some((line_number, line)) = self.lines.next() {
             // We reverse the line elements so that we can pop them off one at a
             // time, handling each event while allowing us to stop at any point.
-            let mut line_events = self.parser.parse_line(line);
+            let mut line_events = self.parser.parse_line(line)?;
             line_events.reverse();
             self.line_events = line_events;
 
@@ -113,11 +120,13 @@ impl<'a> TokenIterator<'a> {
         } else {
             self.current_line = None;
         }
+
+        Ok(())
     }
 }
 
 impl<'a> Iterator for TokenIterator<'a> {
-    type Item = Token<'a>;
+    type Item = Result<Token<'a>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_token()
@@ -126,6 +135,7 @@ impl<'a> Iterator for TokenIterator<'a> {
 
 #[cfg(test)]
 mod tests {
+    use errors::*;
     use super::TokenIterator;
     use buffer::{Lexeme, Position, ScopeStack, Token};
     use syntect::parsing::{Scope, SyntaxSet};
@@ -228,12 +238,10 @@ mod tests {
         }));
         expected_tokens.push(Token::Newline);
         expected_tokens.push(Token::Newline);
-        let actual_tokens: Vec<Token> = iterator.collect();
+        let actual_tokens: Vec<Result<Token>> = iterator.collect();
         for (index, token) in expected_tokens.into_iter().enumerate() {
-            assert_eq!(token, actual_tokens[index]);
+            assert_eq!(&token, actual_tokens[index].as_ref().unwrap());
         }
-
-        //assert_eq!(expected_tokens, actual_tokens);
     }
 
     #[test]
@@ -254,11 +262,9 @@ mod tests {
                 position: Position{ line: 0, offset: 0 }
             })
         );
-        let actual_tokens: Vec<Token> = iterator.collect();
+        let actual_tokens: Vec<Result<Token>> = iterator.collect();
         for (index, token) in expected_tokens.into_iter().enumerate() {
-            assert_eq!(token, actual_tokens[index]);
+            assert_eq!(&token, actual_tokens[index].as_ref().unwrap());
         }
-
-        //assert_eq!(expected_tokens, actual_tokens);
     }
 }

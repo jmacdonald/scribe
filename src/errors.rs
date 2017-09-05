@@ -1,4 +1,10 @@
+use syntect;
+
 error_chain! {
+    links {
+        Syntect(syntect::errors::Error, syntect::errors::ErrorKind);
+    }
+
     errors {
         MissingSyntaxDefinition {
             description("buffer is missing a syntax definition")
