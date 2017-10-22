@@ -2,12 +2,14 @@ use std::cmp;
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TokenIterator<'a> {
     scopes: ScopeStack,
     parser: ParseState,
     lines: LineIterator<'a>,
     current_line: Option<&'a str>,
+    current_byte_offset: usize,
     current_position: Position,
     line_events: Vec<(usize, ScopeStackOp)>,
 }
@@ -19,6 +21,7 @@ impl<'a> TokenIterator<'a> {
             parser: ParseState::new(def),
             lines: LineIterator::new(data),
             current_line: None,
+            current_byte_offset: 0,
             current_position: Position{ line: 0, offset: 0 },
             line_events: Vec::new(),
         };
@@ -59,18 +62,26 @@ impl<'a> TokenIterator<'a> {
                 // We want to capture the full scope for a given token, so we
                 // need to make sure we apply all of them and only capture it
                 // once we've moved on to another token/offset.
-                if event_offset > self.current_position.offset {
+                if event_offset > self.current_byte_offset {
                     // Don't include trailing newlines in lexemes.
                     let end_of_token = cmp::min(event_offset, end_of_line);
 
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
-                            value: &line[self.current_position.offset..end_of_token],
+                            value: &line[self.current_byte_offset..end_of_token],
                             scope: self.scopes.clone(),
                             position: self.current_position.clone(),
                         })
                     );
-                    self.current_position.offset = event_offset;
+
+                    // The event/current offsets are byte-based, but
+                    // position offsets should be grapheme cluster-based.
+                    self.current_position.offset +=
+                        *&line[self.current_byte_offset..end_of_token]
+                        .graphemes(true)
+                        .count();
+
+                    self.current_byte_offset = event_offset;
                 }
 
                 // Apply the scope and keep a reference to it, so
@@ -80,18 +91,19 @@ impl<'a> TokenIterator<'a> {
                 if lexeme.is_some() { return lexeme }
             }
 
-            // If the rest of the line hasn't triggered a scope
-            // change; categorize it with the last known scope.
-            if self.current_position.offset < end_of_line {
+            // Categorize the rest of the line with the last known scope.
+            if self.current_byte_offset < end_of_line {
                 lexeme = Some(
                     Token::Lexeme(Lexeme{
-                        value: &line[self.current_position.offset..end_of_line],
+                        value: &line[self.current_byte_offset..end_of_line],
                         scope: self.scopes.clone(),
                         position: self.current_position.clone(),
                     })
                 );
             }
         }
+
+        // We've finished processing the current line; clean it up.
         self.current_line = None;
 
         lexeme
@@ -110,6 +122,9 @@ impl<'a> TokenIterator<'a> {
 
             // Track our position, which we'll pass to generated tokens.
             self.current_position = Position{ line: line_number, offset: 0 };
+
+            // Reset byte-based line offset.
+            self.current_byte_offset = 0;
         } else {
             self.current_line = None;
         }
@@ -260,5 +275,31 @@ mod tests {
         }
 
         //assert_eq!(expected_tokens, actual_tokens);
+    }
+
+    #[test]
+    fn token_iterator_handles_unicode_characters() {
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let def = syntax_set.find_syntax_by_extension("rs");
+        let iterator = TokenIterator::new("€16", def.unwrap());
+        let mut scope_stack = ScopeStack::new();
+        let mut expected_tokens = Vec::new();
+        scope_stack.push(Scope::new("source.rust").unwrap());
+        expected_tokens.push(Token::Lexeme(Lexeme{
+            value: "€",
+            scope: scope_stack.clone(),
+            position: Position{ line: 0, offset: 0 }
+        }));
+        scope_stack.push(Scope::new("constant.numeric.integer.decimal.rust").unwrap());
+        expected_tokens.push(Token::Lexeme(Lexeme{
+            value: "16",
+            scope: scope_stack.clone(),
+            position: Position{ line: 0, offset: 1 }
+        }));
+
+        let actual_tokens: Vec<Token> = iterator.collect();
+        for (index, token) in expected_tokens.into_iter().enumerate() {
+            assert_eq!(token, actual_tokens[index]);
+        }
     }
 }
