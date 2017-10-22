@@ -1,3 +1,9 @@
+### 0.5.9
+
+* Fixed an issue with `TokenIterator` where position offsets were byte-based
+  rather than grapheme cluster-based, which is the contract/convention
+  applied throughout the rest of the library.
+
 ### 0.5.8
 
 * Expose the `Workspace` type's `syntax_set` field. This allows augmenting the
