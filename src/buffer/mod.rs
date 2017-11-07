@@ -390,7 +390,7 @@ impl Buffer {
     ///     ]
     /// );
     /// ```
-    pub fn search(&mut self, needle: &str) -> Vec<Position> {
+    pub fn search(&self, needle: &str) -> Vec<Position> {
         let mut results = Vec::new();
 
         for (line, data) in self.data().lines().enumerate() {
