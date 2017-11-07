@@ -1,5 +1,6 @@
 use buffer::Distance;
 use std::cmp::{PartialOrd, Ordering};
+use std::ops::Add;
 
 /// A two (zero-based) coordinate value representing a location in a buffer.
 /// The `offset` field is so named to emphasize that positions point to
@@ -28,6 +29,24 @@ impl PartialOrd for Position {
                 }
             }
         )
+    }
+}
+
+impl Add<Distance> for Position {
+    type Output = Position;
+
+    fn add(self, distance: Distance) -> Self::Output {
+        let offset =
+            if distance.lines > 0 {
+                distance.offset
+            } else {
+                self.offset + distance.offset
+            };
+
+        Position {
+            line: self.line + distance.lines,
+            offset: offset
+        }
     }
 }
 
