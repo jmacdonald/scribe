@@ -1,7 +1,7 @@
 /// A vector value representing a span in a buffer. Unlike the
 /// Range type, whose two positions are absolutes, a Distance
 /// is meant to be used relative to a Position.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Distance {
     pub lines: usize,
     pub offset: usize,
