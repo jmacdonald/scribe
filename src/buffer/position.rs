@@ -1,6 +1,6 @@
 use buffer::Distance;
 use std::cmp::{PartialOrd, Ordering};
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 /// A two (zero-based) coordinate value representing a location in a buffer.
 /// The `offset` field is so named to emphasize that positions point to
@@ -50,6 +50,18 @@ impl Add<Distance> for Position {
     }
 }
 
+impl AddAssign<Distance> for Position {
+    fn add_assign(&mut self, distance: Distance) {
+        self.line += distance.lines;
+        self.offset =
+            if distance.lines > 0 {
+                distance.offset
+            } else {
+                self.offset + distance.offset
+            };
+    }
+}
+
 impl Position {
     /// Creates a new position with a line/offset of 0.
     ///
@@ -65,32 +77,6 @@ impl Position {
     /// });
     pub fn new() -> Position {
         Position{ line: 0, offset: 0 }
-    }
-
-    /// Adds the specified Distance to the position.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use scribe::buffer::{Distance, Position};
-    ///
-    /// let mut position = Position{ line: 1, offset: 3 };
-    /// let distance = Distance{ lines: 1, offset: 4 };
-    /// position.add(&distance);
-    ///
-    /// assert_eq!(position, Position{
-    ///     line: 2,
-    ///     offset: 4
-    /// });
-    /// ```
-    pub fn add(&mut self, distance: &Distance) {
-        self.line += distance.lines;
-
-        if distance.lines > 0 {
-            self.offset = distance.offset;
-        } else {
-            self.offset += distance.offset;
-        }
     }
 }
 
@@ -131,10 +117,10 @@ mod tests {
     }
 
     #[test]
-    fn add_works_with_zero_line_distance() {
+    fn add_assign_works_with_zero_line_distance() {
         let mut position = Position{ line: 1, offset: 3 };
         let distance = Distance{ lines: 0, offset: 4 };
-        position.add(&distance);
+        position += distance;
 
         assert_eq!(position, Position{
             line: 1,
