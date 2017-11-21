@@ -1,3 +1,10 @@
+### 0.6.0
+
+* Implemented the Add and AddAssign operation traits for Position.
+  * The latter replaces the previous self-mutating add method.
+* Derived Copy and Clone traits for Distance type.
+* Dropped mutable borrow for buffer search.
+
 ### 0.5.9
 
 * Fixed an issue with `TokenIterator` where position offsets were byte-based
