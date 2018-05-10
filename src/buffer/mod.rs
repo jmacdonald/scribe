@@ -12,7 +12,7 @@ pub use self::range::Range;
 pub use self::line_range::LineRange;
 pub use self::cursor::Cursor;
 pub use self::token::{Lexeme, Token, TokenSet};
-pub use syntect::parsing::{Scope, ScopeStack};
+pub use syntect::parsing::{BasicScopeStackOp, Scope, ScopeStack};
 
 // Child modules
 mod gap_buffer;

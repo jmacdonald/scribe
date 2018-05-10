@@ -1,6 +1,7 @@
 use std::cmp;
+use std::ops::FnMut;
 use buffer::{Lexeme, Position, Token};
-use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
+use syntect::parsing::{BasicScopeStackOp, ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxDefinition};
 use buffer::token::line_iterator::LineIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -10,6 +11,7 @@ pub struct TokenIterator<'a> {
     lines: LineIterator<'a>,
     current_line: Option<&'a str>,
     current_byte_offset: usize,
+    operations: Vec<BasicScopeStackOp>,
     current_position: Position,
     line_events: Vec<(usize, ScopeStackOp)>,
 }
@@ -22,6 +24,7 @@ impl<'a> TokenIterator<'a> {
             lines: LineIterator::new(data),
             current_line: None,
             current_byte_offset: 0,
+            operations: Vec::new(),
             current_position: Position{ line: 0, offset: 0 },
             line_events: Vec::new(),
         };
@@ -70,6 +73,7 @@ impl<'a> TokenIterator<'a> {
                         Token::Lexeme(Lexeme{
                             value: &line[self.current_byte_offset..end_of_token],
                             scope: self.scopes.clone(),
+                            operations: self.operations.clone(),
                             position: self.current_position.clone(),
                         })
                     );
@@ -86,7 +90,11 @@ impl<'a> TokenIterator<'a> {
 
                 // Apply the scope and keep a reference to it, so
                 // that we can pair it with a token later on.
-                self.scopes.apply(&scope_change);
+                let mut operations = Vec::new();
+                self.scopes.apply_with_hook(&scope_change, |op, _| {
+                    operations.push(op);
+                });
+                self.operations = operations;
 
                 if lexeme.is_some() { return lexeme }
             }
@@ -97,6 +105,7 @@ impl<'a> TokenIterator<'a> {
                     Token::Lexeme(Lexeme{
                         value: &line[self.current_byte_offset..end_of_line],
                         scope: self.scopes.clone(),
+                        operations: self.operations.clone(),
                         position: self.current_position.clone(),
                     })
                 );

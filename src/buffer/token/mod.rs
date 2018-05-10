@@ -7,7 +7,7 @@ pub use self::token_iterator::TokenIterator;
 pub use self::token_set::TokenSet;
 
 use buffer::Position;
-use syntect::parsing::ScopeStack;
+use syntect::parsing::{BasicScopeStackOp, ScopeStack};
 
 #[derive(Debug, PartialEq)]
 pub enum Token<'a> {
@@ -19,5 +19,6 @@ pub enum Token<'a> {
 pub struct Lexeme<'a> {
     pub value: &'a str,
     pub scope: ScopeStack,
+    pub operations: Vec<BasicScopeStackOp>,
     pub position: Position,
 }
