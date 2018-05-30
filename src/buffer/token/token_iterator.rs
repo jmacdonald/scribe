@@ -1,4 +1,5 @@
 use std::cmp;
+use std::mem;
 use std::ops::FnMut;
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{BasicScopeStackOp, ParseState, Scope, ScopeStack, ScopeStackOp, SyntaxDefinition};
@@ -69,11 +70,13 @@ impl<'a> TokenIterator<'a> {
                     // Don't include trailing newlines in lexemes.
                     let end_of_token = cmp::min(event_offset, end_of_line);
 
+                    let mut operations = Vec::new();
+                    mem::swap(&mut operations, &mut self.operations);
                     lexeme = Some(
                         Token::Lexeme(Lexeme{
                             value: &line[self.current_byte_offset..end_of_token],
                             scope: self.scopes.clone(),
-                            operations: self.operations.clone(),
+                            operations: operations,
                             position: self.current_position.clone(),
                         })
                     );
@@ -94,7 +97,7 @@ impl<'a> TokenIterator<'a> {
                 self.scopes.apply_with_hook(&scope_change, |op, _| {
                     operations.push(op);
                 });
-                self.operations = operations;
+                operations.drain(..).for_each(|o| self.operations.push(o));
 
                 if lexeme.is_some() { return lexeme }
             }
@@ -109,6 +112,7 @@ impl<'a> TokenIterator<'a> {
                         position: self.current_position.clone(),
                     })
                 );
+                self.operations = Vec::new();
             }
         }
 
