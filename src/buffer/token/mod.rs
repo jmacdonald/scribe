@@ -11,7 +11,7 @@ use syntect::parsing::{BasicScopeStackOp, ScopeStack};
 
 #[derive(Debug, PartialEq)]
 pub enum Token<'a> {
-    Newline,
+    Newline(Vec<BasicScopeStackOp>),
     Lexeme(Lexeme<'a>)
 }
 

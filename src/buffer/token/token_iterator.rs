@@ -44,7 +44,7 @@ impl<'a> TokenIterator<'a> {
         // We're done with this line; on to the next.
         self.parse_next_line();
         if self.current_line.is_some() {
-            Some(Token::Newline)
+            Some(Token::Newline(self.operations.drain(..).collect()))
         } else {
             None
         }
