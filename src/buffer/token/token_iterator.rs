@@ -1,7 +1,7 @@
 use std::cmp;
 use buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
-use buffer::token::line_iterator::LineIterator;
+use util::LineIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TokenIterator<'a> {

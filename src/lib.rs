@@ -9,6 +9,7 @@ extern crate unicode_segmentation;
 extern crate error_chain;
 
 pub mod buffer;
+pub mod util;
 mod errors;
 mod workspace;
 

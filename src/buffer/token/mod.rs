@@ -1,8 +1,6 @@
-mod line_iterator;
 mod token_iterator;
 mod token_set;
 
-pub use self::line_iterator::LineIterator;
 pub use self::token_iterator::TokenIterator;
 pub use self::token_set::TokenSet;
 
