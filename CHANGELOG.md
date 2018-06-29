@@ -1,3 +1,13 @@
+### 0.6.2
+
+* Expose the LineIterator type, which includes trailing newlines. This is
+  required when using the `syntect` crate to highlight a buffer, as its line
+  parser expects these.
+
+### 0.6.1
+
+* Updated documentation links and README.
+
 ### 0.6.0
 
 * Implemented the Add and AddAssign operation traits for Position.
