@@ -12,7 +12,7 @@ license-file = "LICENSE"
 keywords = ["gap", "buffer", "text", "editor", "document"]
 
 [dependencies]
-syntect = "~1.7.1"
+syntect = "~2.1.0"
 luthor = "~0.1.7"
 unicode-segmentation = "~1.0.1"
 error-chain = "0.10.0"
