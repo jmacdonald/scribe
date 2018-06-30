@@ -1,3 +1,7 @@
+### 0.6.3
+
+* Updated syntect dependency to 2.1.0.
+
 ### 0.6.2
 
 * Expose the LineIterator type, which includes trailing newlines. This is
