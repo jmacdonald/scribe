@@ -533,7 +533,7 @@ mod tests {
         buffer.id = Some(1);
         buffer.syntax_definition = syntax_definition;
 
-        buffer.reload();
+        buffer.reload().unwrap();
 
         assert_eq!(buffer.id, Some(1));
         assert!(buffer.syntax_definition.is_some());
@@ -556,7 +556,7 @@ mod tests {
         }));
 
         // Reload the buffer
-        buffer.reload();
+        buffer.reload().unwrap();
 
         // Verify that the callback received the correct position.
         assert_eq!(*tracked_position.borrow(), Position::new());

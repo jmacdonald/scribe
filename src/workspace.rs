@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn open_buffer_adds_and_selects_the_buffer_at_the_specified_path() {
         let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
 
         assert_eq!(workspace.buffers.len(), 1);
         assert_eq!(workspace.current_buffer().unwrap().data(), "it works!\n");
@@ -455,8 +455,8 @@ mod tests {
     #[test]
     fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
         let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file"));
-        workspace.open_buffer(Path::new("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
+        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
 
         assert_eq!(workspace.buffers.len(), 1);
     }
@@ -464,7 +464,7 @@ mod tests {
     #[test]
     fn open_buffer_selects_buffer_if_it_already_exists_in_workspace() {
         let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
 
         // Add and select another buffer.
         let mut buf = Buffer::new();
@@ -473,7 +473,7 @@ mod tests {
         assert_eq!(workspace.current_buffer().unwrap().data(), "scribe");
 
         // Try to add the first buffer again.
-        workspace.open_buffer(Path::new("tests/sample/file"));
+        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
 
         // Ensure there are only two buffers, and that the
         // one requested via open_buffer is now selected.
@@ -499,7 +499,7 @@ mod tests {
     fn current_buffer_path_works_with_absolute_paths() {
         let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let mut buf = Buffer::new();
-        let mut absolute_path = env::current_dir().unwrap();
+        let absolute_path = env::current_dir().unwrap();
         buf.path = Some(absolute_path.clone());
         workspace.add_buffer(buf);
         assert_eq!(workspace.current_buffer_path(), Some(absolute_path.as_path()));

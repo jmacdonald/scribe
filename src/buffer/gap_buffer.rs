@@ -466,7 +466,7 @@ mod tests {
 
     #[test]
     fn reading_after_a_grapheme_cluster_works() {
-        let mut gb = GapBuffer::new("scribe नी library".to_string());
+        let gb = GapBuffer::new("scribe नी library".to_string());
         let range = Range::new(
             Position{ line: 0, offset: 8 },
             Position{ line: 0, offset: 16 }
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn in_bounds_considers_grapheme_clusters() {
-        let mut gb = GapBuffer::new("scribe नी library".to_string());
+        let gb = GapBuffer::new("scribe नी library".to_string());
         let in_bounds = Position{ line: 0, offset: 16 };
         let out_of_bounds = Position{ line: 0, offset: 17 };
         assert!(gb.in_bounds(&in_bounds));
