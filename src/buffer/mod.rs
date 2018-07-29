@@ -33,6 +33,7 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
 use std::mem;
+use std::ops::Fn;
 use std::path::{Path, PathBuf};
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
@@ -43,6 +44,10 @@ use syntect::parsing::SyntaxDefinition;
 /// The buffer type wraps an in-memory buffer, providing file I/O, a bounds-checked moveable
 /// cursor, undo/redo history, simple type/format detection, and lexing (producing categorized
 /// tokens suitable for syntax-highlighted display).
+///
+/// If the buffer is configured with a `change_callback`, it will be called with
+/// a position whenever the buffer is modified; it's particularly useful for
+/// cache invalidation.
 pub struct Buffer {
     pub id: Option<usize>,
     data: Rc<RefCell<GapBuffer>>,
@@ -51,6 +56,7 @@ pub struct Buffer {
     history: History,
     operation_group: Option<OperationGroup>,
     pub syntax_definition: Option<SyntaxDefinition>,
+    pub change_callback: Option<Box<Fn(Position)>>,
 }
 
 impl Buffer {
@@ -79,6 +85,7 @@ impl Buffer {
             history: History::new(),
             operation_group: None,
             syntax_definition: None,
+            change_callback: None,
         }
     }
 
@@ -119,6 +126,7 @@ impl Buffer {
             history: History::new(),
             operation_group: None,
             syntax_definition: None,
+            change_callback: None,
         };
 
         // We mark the history at points where the
@@ -487,10 +495,16 @@ impl Buffer {
                     // Restore the buffer's ID.
                     self.id = buf.id;
                     self.syntax_definition = buf.syntax_definition;
+                    self.change_callback = buf.change_callback;
                 },
                 Err(e) => return Err(e),
             }
         }
+
+        // Run the change callback, if present.
+        self.change_callback
+            .as_ref()
+            .map(|callback| callback(Position::new()));
 
         Ok(())
     }
@@ -500,7 +514,9 @@ impl Buffer {
 mod tests {
     extern crate syntect;
     use syntect::parsing::SyntaxSet;
+    use std::cell::RefCell;
     use std::path::Path;
+    use std::rc::Rc;
     use buffer::{Buffer, Position};
 
     #[test]
@@ -521,6 +537,29 @@ mod tests {
 
         assert_eq!(buffer.id, Some(1));
         assert!(buffer.syntax_definition.is_some());
+    }
+
+    #[test]
+    fn reload_calls_change_callback_with_zero_position() {
+        // Load a buffer with some data and modify it.
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+        buffer.insert("amp\neditor");
+
+        // Create a non-zero position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position{ line: 1, offset: 1 }));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Reload the buffer
+        buffer.reload();
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position::new());
     }
 
     #[test]

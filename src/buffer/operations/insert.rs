@@ -9,6 +9,9 @@ use unicode_segmentation::UnicodeSegmentation;
 /// Inserts the provided content at the specified position. Tracks both, and reverses
 /// the operation by calculating the content's start and end positions (range), relative
 /// to its inserted location, and removing said range from the underlying buffer.
+///
+/// If the buffer is configured with a `change_callback`, it will be called with
+/// the position of this operation when it is run or reversed.
 #[derive(Clone)]
 pub struct Insert {
     content: String,
@@ -18,6 +21,11 @@ pub struct Insert {
 impl Operation for Insert {
     fn run(&mut self, buffer: &mut Buffer) {
         buffer.data.borrow_mut().insert(&self.content, &self.position);
+
+        // Run the change callback, if present.
+        buffer.change_callback
+            .as_ref()
+            .map(|callback| callback(self.position));
     }
 
     // We need to calculate the range of the inserted content.
@@ -55,6 +63,11 @@ impl Operation for Insert {
 
         // Remove the content we'd previously inserted.
         buffer.data.borrow_mut().delete(&range);
+
+        // Run the change callback, if present.
+        buffer.change_callback
+            .as_ref()
+            .map(|callback| callback(self.position));
     }
 
     fn clone_operation(&self) -> Box<Operation> {
@@ -83,7 +96,7 @@ impl Buffer {
     /// ```
     pub fn insert<T: Into<String>>(&mut self, data: T) {
         // Build and run an insert operation.
-        let mut op = Insert::new(data.into(), self.cursor.position.clone());
+        let mut op = Insert::new(data.into(), self.cursor.position);
         op.run(self);
 
         // Store the operation in the history
@@ -97,6 +110,8 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
     use super::Insert;
     use buffer::Buffer;
     use buffer::position::Position;
@@ -197,5 +212,60 @@ mod tests {
 
         insert_operation.reverse(&mut buffer);
         assert_eq!(buffer.data(), "scribe\nlibrary");
+    }
+
+    #[test]
+    fn run_calls_change_callback_with_position() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("something");
+
+        // Set up a position pointing to the end of the buffer's contents.
+        let insert_position = Position{ line: 0, offset: 9 };
+
+        // Create a position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position::new()));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Create the insert operation and run it.
+        let mut insert_operation = Insert::new(" else".to_string(), insert_position);
+        insert_operation.run(&mut buffer);
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+    }
+
+    #[test]
+    fn reverse_calls_change_callback_with_position() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("something");
+
+        // Set up a position pointing to the end of the buffer's contents.
+        let insert_position = Position{ line: 0, offset: 9 };
+
+        // Create the insert operation and run it.
+        let mut insert_operation = Insert::new(" else".to_string(), insert_position);
+        insert_operation.run(&mut buffer);
+
+        // Create a position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position::new()));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Reverse the operation.
+        insert_operation.reverse(&mut buffer);
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
     }
 }

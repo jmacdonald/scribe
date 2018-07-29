@@ -7,6 +7,9 @@ use std::clone::Clone;
 /// Deletes the content at the specified range. Tracks the deleted content and specified
 /// range, and reverses the operation by (trivially) inserting the deleted content at
 /// the start of the specified range.
+///
+/// If the buffer is configured with a `change_callback`, it will be called with
+/// the starting position of this operation when it is run or reversed.
 #[derive(Clone)]
 pub struct Delete {
     content: Option<String>,
@@ -20,12 +23,22 @@ impl Operation for Delete {
 
         // Delete the data.
         buffer.data.borrow_mut().delete(&self.range);
+
+        // Run the change callback, if present.
+        buffer.change_callback
+            .as_ref()
+            .map(|callback| callback(self.range.start()));
     }
 
     fn reverse(&mut self, buffer: &mut Buffer) {
         match self.content {
             Some(ref content) => {
                 buffer.data.borrow_mut().insert(content, &self.range.start());
+
+                // Run the change callback, if present.
+                buffer.change_callback
+                    .as_ref()
+                    .map(|callback| callback(self.range.start()));
             },
             None => (),
         }
@@ -117,6 +130,8 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
     use super::Delete;
     use buffer::{Buffer, Position, Range};
     use buffer::operation::Operation;
@@ -166,5 +181,64 @@ mod tests {
         delete_operation.reverse(&mut buffer);
 
         assert_eq!(buffer.data(), "\n something\n else\n entirely");
+    }
+
+    #[test]
+    fn run_calls_change_callback_with_position() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("something else");
+
+        // Set up a range that covers everything after the first word.
+        let start = Position{ line: 0, offset: 9 };
+        let end = Position{ line: 0, offset: 14 };
+        let delete_range = Range::new(start, end);
+
+        // Create a position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position::new()));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Create the delete operation and run it.
+        let mut delete_operation = Delete::new(delete_range);
+        delete_operation.run(&mut buffer);
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+    }
+
+    #[test]
+    fn reverse_calls_change_callback_with_position() {
+        // Set up a buffer with some data.
+        let mut buffer = Buffer::new();
+        buffer.insert("something else");
+
+        // Set up a range that covers everything after the first word.
+        let start = Position{ line: 0, offset: 9 };
+        let end = Position{ line: 0, offset: 14 };
+        let delete_range = Range::new(start, end);
+
+        // Create the delete operation and run it.
+        let mut delete_operation = Delete::new(delete_range);
+        delete_operation.run(&mut buffer);
+
+        // Create a position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position::new()));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Reverse the operation.
+        delete_operation.reverse(&mut buffer);
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
     }
 }
