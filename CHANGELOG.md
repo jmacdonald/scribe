@@ -1,3 +1,9 @@
+### 0.7.0
+
+* Add `change_callback` field to `Buffer` type, to facilitate cache invalidation
+  implementations. When specified, this closure will be called whenever buffer
+  data changes.
+
 ### 0.6.3
 
 * Updated syntect dependency to 2.1.0.
