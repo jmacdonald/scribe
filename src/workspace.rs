@@ -1,6 +1,7 @@
 //! Buffer and working directory management.
 
 use buffer::Buffer;
+use errors::*;
 use std::io;
 use std::path::{Path, PathBuf};
 use syntect::parsing::{SyntaxDefinition, SyntaxSet};
@@ -339,6 +340,57 @@ impl Workspace {
         } else {
             false
         }
+    }
+
+    /// Updates the current buffer's syntax definition.
+    ///
+    /// If a buffer is added to a workspace and is assigned a plain text syntax
+    /// definition (because the buffer has no path or file extension, or because
+    /// there is no better definition for its path extension), and its path is
+    /// changed, this method can be used to attempt the assignment again, in
+    /// hopes for a more accurate match.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// extern crate syntect;
+    /// extern crate scribe;
+    ///
+    /// use scribe::Buffer;
+    /// use scribe::Workspace;
+    /// use std::path::{Path, PathBuf};
+    ///
+    /// // Create a workspace.
+    /// let workspace_path = Path::new("tests/sample");
+    /// let mut workspace = Workspace::new(workspace_path).unwrap();
+    ///
+    /// // Add a buffer without a path to the workspace.
+    /// let buf = Buffer::new();
+    /// workspace.add_buffer(buf);
+    ///
+    /// assert_eq!(
+    ///     workspace.current_buffer().unwrap().syntax_definition.as_ref().unwrap().name,
+    ///     "Plain Text"
+    /// );
+    ///
+    /// // Add a path and update the syntax definition.
+    /// let buffer_path = PathBuf::from("mod.rs");
+    /// workspace.current_buffer().unwrap().path = Some(buffer_path);
+    /// workspace.update_current_syntax().unwrap();
+    ///
+    /// assert_eq!(
+    ///     workspace.current_buffer().unwrap().syntax_definition.as_ref().unwrap().name,
+    ///     "Rust"
+    /// );
+    ///
+    /// ```
+    pub fn update_current_syntax(&mut self) -> Result<()> {
+        let index = self.current_buffer_index.ok_or(ErrorKind::EmptyWorkspace)?;
+        let syntax_definition = self.find_syntax_definition(&self.buffers[index]);
+        let buffer = &mut self.buffers[index];
+        buffer.syntax_definition = syntax_definition;
+
+        Ok(())
     }
 
     // Returns a syntax definition based on the buffer's file extension,
