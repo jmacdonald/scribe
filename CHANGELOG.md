@@ -1,8 +1,15 @@
+### 0.7.1
+
+* Add `update_current_syntax` method to the `Workspace` type, to re-attempt
+  assigning a syntax definition to the current buffer. This is most useful when
+  a buffer path changes, and the new path can provide a more appropriate
+  definition.
+
 ### 0.7.0
 
-* Add `change_callback` field to `Buffer` type, to facilitate cache invalidation
-  implementations. When specified, this closure will be called whenever buffer
-  data changes.
+* Add `change_callback` field to the `Buffer` type, to facilitate cache
+  invalidation implementations. When specified, this closure will be called
+  whenever buffer data changes.
 
 ### 0.6.3
 
