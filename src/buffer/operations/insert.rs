@@ -23,9 +23,9 @@ impl Operation for Insert {
         buffer.data.borrow_mut().insert(&self.content, &self.position);
 
         // Run the change callback, if present.
-        buffer.change_callback
-            .as_ref()
-            .map(|callback| callback(self.position));
+        if let Some(ref callback) = buffer.change_callback {
+            callback(self.position)
+        }
     }
 
     // We need to calculate the range of the inserted content.
@@ -44,7 +44,7 @@ impl Operation for Insert {
         } else {
             // If there are multiple lines, the end of the range doesn't
             // need to consider the original insertion location.
-            match self.content.split("\n").last() {
+            match self.content.split('\n').last() {
                 Some(line) => line.graphemes(true).count(),
                 None => return,
             }
@@ -57,7 +57,7 @@ impl Operation for Insert {
             offset: end_offset,
         };
         let range = Range::new(
-            self.position.clone(),
+            self.position,
             end_position
         );
 
@@ -65,9 +65,9 @@ impl Operation for Insert {
         buffer.data.borrow_mut().delete(&range);
 
         // Run the change callback, if present.
-        buffer.change_callback
-            .as_ref()
-            .map(|callback| callback(self.position));
+        if let Some(ref callback) = buffer.change_callback {
+            callback(self.position)
+        }
     }
 
     fn clone_operation(&self) -> Box<Operation> {
@@ -78,7 +78,7 @@ impl Operation for Insert {
 impl Insert {
     /// Creates a new empty insert operation.
     pub fn new(content: String, position: Position) -> Insert {
-        Insert{ content: content, position: position }
+        Insert{ content, position }
     }
 }
 

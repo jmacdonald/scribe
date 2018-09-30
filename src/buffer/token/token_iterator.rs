@@ -52,7 +52,7 @@ impl<'a> TokenIterator<'a> {
 
         if let Some(line) = self.current_line {
             // Exclude trailing newlines (we have a Newline variant for that).
-            let end_of_line = if line.chars().last() == Some('\n') {
+            let end_of_line = if line.ends_with('\n') {
                 line.len() - 1
             } else {
                 line.len()
@@ -70,14 +70,14 @@ impl<'a> TokenIterator<'a> {
                         Token::Lexeme(Lexeme{
                             value: &line[self.current_byte_offset..end_of_token],
                             scope: self.scopes.clone(),
-                            position: self.current_position.clone(),
+                            position: self.current_position,
                         })
                     );
 
                     // The event/current offsets are byte-based, but
                     // position offsets should be grapheme cluster-based.
                     self.current_position.offset +=
-                        *&line[self.current_byte_offset..end_of_token]
+                        line[self.current_byte_offset..end_of_token]
                         .graphemes(true)
                         .count();
 
@@ -97,7 +97,7 @@ impl<'a> TokenIterator<'a> {
                     Token::Lexeme(Lexeme{
                         value: &line[self.current_byte_offset..end_of_line],
                         scope: self.scopes.clone(),
-                        position: self.current_position.clone(),
+                        position: self.current_position,
                     })
                 );
             }

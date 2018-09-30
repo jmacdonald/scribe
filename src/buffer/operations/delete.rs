@@ -25,22 +25,19 @@ impl Operation for Delete {
         buffer.data.borrow_mut().delete(&self.range);
 
         // Run the change callback, if present.
-        buffer.change_callback
-            .as_ref()
-            .map(|callback| callback(self.range.start()));
+        if let Some(ref callback) = buffer.change_callback {
+            callback(self.range.start())
+        }
     }
 
     fn reverse(&mut self, buffer: &mut Buffer) {
-        match self.content {
-            Some(ref content) => {
-                buffer.data.borrow_mut().insert(content, &self.range.start());
+        if let Some(ref content) = self.content {
+            buffer.data.borrow_mut().insert(content, &self.range.start());
 
-                // Run the change callback, if present.
-                buffer.change_callback
-                    .as_ref()
-                    .map(|callback| callback(self.range.start()));
-            },
-            None => (),
+            // Run the change callback, if present.
+            if let Some(ref callback) = buffer.change_callback {
+                callback(self.range.start())
+            }
         }
     }
 
@@ -52,7 +49,7 @@ impl Operation for Delete {
 impl Delete {
     /// Creates a new empty delete operation.
     pub fn new(range: Range) -> Delete {
-        Delete{ content: None, range: range }
+        Delete{ content: None, range }
     }
 }
 
@@ -87,7 +84,7 @@ impl Buffer {
 
         // The range we're building is going to be consumed,
         // so create a clone of the cursor's current position.
-        let start = self.cursor.position.clone();
+        let start = self.cursor.position;
 
         // Now that we've established the range, defer.
         self.delete_range(Range::new(start, end));

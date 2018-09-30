@@ -28,7 +28,7 @@ impl Workspace {
             buffers: Vec::new(),
             next_buffer_id: 0,
             current_buffer_index: None,
-            syntax_set: syntax_set,
+            syntax_set,
         })
     }
 
@@ -103,18 +103,12 @@ impl Workspace {
             // Loop through the buffers until it's selected.
             let canonical_path = path.canonicalize().unwrap();
             loop {
-                match self.current_buffer() {
-                    Some(buffer) => {
-                        match buffer.path {
-                            Some(ref current_path) => {
-                                if *current_path == canonical_path {
-                                    break;
-                                }
-                            },
-                            None => (),
+                if let Some(buffer) = self.current_buffer() {
+                    if let Some(ref current_path) = buffer.path {
+                        if *current_path == canonical_path {
+                            break;
                         }
-                    },
-                    None => (),
+                    }
                 }
 
                 self.next_buffer()
@@ -124,7 +118,10 @@ impl Workspace {
             Ok(())
         } else {
             let buffer = try!(Buffer::from_file(path));
-            Ok(self.add_buffer(buffer))
+            self.add_buffer(buffer);
+
+
+            Ok(())
         }
     }
 
@@ -189,7 +186,7 @@ impl Workspace {
         self.current_buffer_index
           .and_then(|i| self.buffers[i].path.as_ref()
               .and_then(|path| path.strip_prefix(&self.path).ok()
-                  .or(Some(path))
+                  .or_else(|| Some(path))
               )
           )
     }
@@ -403,7 +400,7 @@ impl Workspace {
                     Some(s.clone())
                 )
             )
-        ).or(
+        ).or_else(||
             // Fall back to a plain text definition.
             Some(self.syntax_set.find_syntax_plain_text().clone())
         )

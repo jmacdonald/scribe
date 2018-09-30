@@ -1,12 +1,13 @@
 use buffer::Distance;
 use std::cmp::{PartialOrd, Ordering};
+use std::default::Default;
 use std::ops::{Add, AddAssign};
 
 /// A two (zero-based) coordinate value representing a location in a buffer.
 /// The `offset` field is so named to emphasize that positions point to
 /// locations before/after characters, not characters themselves, in an effort
 /// to avoid fencepost errors.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Position {
     pub line:   usize,
     pub offset: usize,
@@ -19,14 +20,12 @@ impl PartialOrd for Position {
                 Ordering::Less
             } else if self.line > other.line {
                 Ordering::Greater
+            } else if self.offset < other.offset {
+                Ordering::Less
+            } else if self.offset > other.offset {
+                Ordering::Greater
             } else {
-                if self.offset < other.offset {
-                    Ordering::Less
-                } else if self.offset > other.offset {
-                    Ordering::Greater
-                } else {
-                    Ordering::Equal
-                }
+                Ordering::Equal
             }
         )
     }
@@ -45,7 +44,7 @@ impl Add<Distance> for Position {
 
         Position {
             line: self.line + distance.lines,
-            offset: offset
+            offset
         }
     }
 }
@@ -76,7 +75,7 @@ impl Position {
     ///     offset: 0
     /// });
     pub fn new() -> Position {
-        Position{ line: 0, offset: 0 }
+        Default::default()
     }
 }
 

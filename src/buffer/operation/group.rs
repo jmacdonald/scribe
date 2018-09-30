@@ -75,13 +75,10 @@ impl Buffer {
     /// these will be undone/applied together when calling undo/redo, respectively.
     pub fn end_operation_group(&mut self) {
         // Push an open operation group on to the history stack, if one exists.
-        match self.operation_group.take() {
-            Some(group) => {
-                if !group.is_empty() {
-                    self.history.add(Box::new(group))
-                }
-            },
-            None => (),
+        if let Some(group) = self.operation_group.take() {
+            if !group.is_empty() {
+                self.history.add(Box::new(group))
+            }
         }
     }
 }

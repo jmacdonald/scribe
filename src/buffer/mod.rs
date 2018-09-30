@@ -29,6 +29,7 @@ mod token;
 use errors::*;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::default::Default;
 use std::fs::File;
 use std::io;
 use std::io::{Read, Write};
@@ -59,6 +60,26 @@ pub struct Buffer {
     pub change_callback: Option<Box<Fn(Position)>>,
 }
 
+impl Default for Buffer {
+    fn default() -> Self {
+        let data = Rc::new(RefCell::new(GapBuffer::new(String::new())));
+        let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
+        let mut history = History::new();
+        history.mark();
+
+        Buffer{
+            id: None,
+            data: data.clone(),
+            path: None,
+            cursor,
+            history: History::new(),
+            operation_group: None,
+            syntax_definition: None,
+            change_callback: None,
+        }
+    }
+}
+
 impl Buffer {
     /// Creates a new empty buffer. The buffer's cursor is set to the beginning of the buffer.
     ///
@@ -72,21 +93,7 @@ impl Buffer {
     /// # assert_eq!(buffer.cursor.offset, 0);
     /// ```
     pub fn new() -> Buffer {
-        let data = Rc::new(RefCell::new(GapBuffer::new(String::new())));
-        let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
-        let mut history = History::new();
-        history.mark();
-
-        Buffer{
-            id: None,
-            data: data.clone(),
-            path: None,
-            cursor: cursor,
-            history: History::new(),
-            operation_group: None,
-            syntax_definition: None,
-            change_callback: None,
-        }
+        Default::default()
     }
 
     /// Creates a new buffer by reading the UTF-8 interpreted file contents of the specified path.
@@ -110,7 +117,7 @@ impl Buffer {
     /// ```
     pub fn from_file(path: &Path) -> io::Result<Buffer> {
         // Try to open and read the file, returning any errors encountered.
-        let mut file = File::open(path.clone())?;
+        let mut file = File::open(path)?;
         let mut data = String::new();
         file.read_to_string(&mut data)?;
 
@@ -122,7 +129,7 @@ impl Buffer {
             id: None,
             data: data.clone(),
             path: Some(try!(path.canonicalize())),
-            cursor: cursor,
+            cursor,
             history: History::new(),
             operation_group: None,
             syntax_definition: None,
@@ -193,7 +200,7 @@ impl Buffer {
         // buffer is in sync with its file equivalent.
         self.history.mark();
 
-        return Ok(())
+        Ok(())
     }
 
     /// Produces a set of tokens based on the buffer data
@@ -255,7 +262,7 @@ impl Buffer {
             }
         }
 
-        scope.ok_or(ErrorKind::MissingScope.into())
+        scope.ok_or_else(|| ErrorKind::MissingScope.into())
     }
 
     /// Returns the file name portion of the buffer's path, if
@@ -409,8 +416,8 @@ impl Buffer {
                 if haystack.len() >= needle.len() && needle.as_bytes() == &haystack.as_bytes()[..needle.len()] {
                     results.push(
                         Position{
-                            line: line,
-                            offset: offset
+                            line,
+                            offset
                         }
                     );
                 }
@@ -502,9 +509,9 @@ impl Buffer {
         }
 
         // Run the change callback, if present.
-        self.change_callback
-            .as_ref()
-            .map(|callback| callback(Position::new()));
+        if let Some(ref callback) = self.change_callback {
+            callback(Position::new())
+        }
 
         Ok(())
     }

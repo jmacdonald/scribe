@@ -15,7 +15,7 @@ impl Range {
         if start > end {
             Range{ start: end, end: start }
         } else {
-            Range{ start: start, end: end }
+            Range{ start, end }
         }
     }
 
