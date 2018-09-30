@@ -17,12 +17,12 @@ impl Distance {
     /// use scribe::buffer::Distance;
     ///
     /// let data = "scribe\ndistance";
-    /// assert_eq!(Distance::from_str(data), Distance{
+    /// assert_eq!(Distance::of_str(data), Distance{
     ///     lines: 1,
     ///     offset: 8
     /// });
     /// ```
-    pub fn from_str(from: &str) -> Distance {
+    pub fn of_str(from: &str) -> Distance {
         Distance{
             lines: from.chars().filter(|&c| c == '\n').count(),
             offset: from.split('\n').last().map(|l| l.len()).unwrap_or(0)
@@ -35,16 +35,16 @@ mod tests {
     use super::Distance;
 
     #[test]
-    fn from_str_works_with_a_single_line_of_data() {
-        assert_eq!(Distance::from_str("line"), Distance{
+    fn of_str_works_with_a_single_line_of_data() {
+        assert_eq!(Distance::of_str("line"), Distance{
             lines: 0,
             offset: 4
         });
     }
 
     #[test]
-    fn from_str_works_with_a_trailing_newline() {
-        assert_eq!(Distance::from_str("trailing newline\n"), Distance{
+    fn of_str_works_with_a_trailing_newline() {
+        assert_eq!(Distance::of_str("trailing newline\n"), Distance{
             lines: 1,
             offset: 0
         });

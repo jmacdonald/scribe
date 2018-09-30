@@ -12,7 +12,7 @@ impl LineRange {
     /// arguments in the event that the end precedes the start.
     pub fn new(start: usize, end: usize) -> LineRange {
         if start < end {
-            LineRange{ start: start, end: end }
+            LineRange{ start, end }
         } else {
             LineRange{ start: end, end: start }
         }

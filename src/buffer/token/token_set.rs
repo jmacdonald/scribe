@@ -9,7 +9,7 @@ pub struct TokenSet<'a> {
 impl<'a> TokenSet<'a> {
     pub fn new(data: String, def: &SyntaxDefinition) -> TokenSet {
         TokenSet{
-            data: data,
+            data,
             syntax_definition: def
         }
     }

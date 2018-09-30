@@ -32,7 +32,8 @@ impl GapBuffer {
         unsafe {
             bytes.set_len(capacity);
         }
-        GapBuffer{ data: bytes, gap_start: gap_start, gap_length: gap_length }
+
+        GapBuffer{ data: bytes, gap_start, gap_length }
     }
 
     /// Inserts the specified data into the buffer at the specified position.

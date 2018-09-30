@@ -33,8 +33,8 @@ impl Cursor {
     /// Initializes a cursor bound to the specified gap buffer, at the specified position.
     pub fn new(data: Rc<RefCell<GapBuffer>>, position: Position) -> Cursor {
         Cursor{
-            data: data,
-            position: position,
+            data,
+            position,
             sticky_offset: position.offset
         }
     }
@@ -85,7 +85,7 @@ impl Cursor {
         let new_position = Position{ line: target_line, offset: self.sticky_offset };
 
         // Try moving to the same offset on the line above, falling back to its EOL.
-        if self.move_to(new_position) == false {
+        if !self.move_to(new_position) {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
@@ -108,7 +108,7 @@ impl Cursor {
         let new_position = Position{ line: target_line, offset: self.sticky_offset };
 
         // Try moving to the same offset on the line below, falling back to its EOL.
-        if self.move_to(new_position) == false {
+        if !self.move_to(new_position) {
             let mut target_offset = 0;
             for (line_number, line) in self.data.borrow().to_string().lines().enumerate() {
                 if line_number == target_line {
@@ -151,12 +151,9 @@ impl Cursor {
     pub fn move_to_end_of_line(&mut self) {
         let data = self.data.borrow().to_string();
         let current_line = data.lines().nth(self.line);
-        match current_line {
-            Some(line) => {
-                let new_position = Position{ line: self.line, offset: line.graphemes(true).count() };
-                self.move_to(new_position);
-            },
-            None => (),
+        if let Some(line) = current_line {
+            let new_position = Position{ line: self.line, offset: line.graphemes(true).count() };
+            self.move_to(new_position);
         }
     }
 
@@ -177,10 +174,10 @@ impl Cursor {
         let target_position =
             if length < self.sticky_offset {
                 // Current offset is beyond the last line's length; move to the end of it.
-                Position{ line: line, offset: length }
+                Position{ line, offset: length }
             } else {
                 // Current offset is available on the last line; go there.
-                Position{ line: line, offset: self.sticky_offset }
+                Position{ line, offset: self.sticky_offset }
             };
         self.move_to(target_position);
     }

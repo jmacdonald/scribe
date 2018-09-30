@@ -7,9 +7,9 @@ pub struct LineIterator<'a> {
 }
 
 impl<'a> LineIterator<'a> {
-    pub fn new<'b>(data: &'b str) -> LineIterator<'b> {
+    pub fn new(data: &str) -> LineIterator {
         LineIterator{
-            data: data,
+            data,
             line_number: 0,
             line_start: 0,
             line_end: 0,
