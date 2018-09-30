@@ -1,3 +1,8 @@
+### 0.7.2
+
+* Renamed Distance type's `from_str` method to `of_str`, to prevent ambiguity
+  with the standard library FromStr trait method.
+
 ### 0.7.1
 
 * Add `update_current_syntax` method to the `Workspace` type, to re-attempt
