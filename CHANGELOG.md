@@ -1,3 +1,8 @@
+### 0.7.3
+
+* Add `iter_buffer` method to the `Workspace` type to make it possible to get
+  a list of currently open buffers from the currently selected one.
+
 ### 0.7.2
 
 * Renamed Distance type's `from_str` method to `of_str`, to prevent ambiguity
