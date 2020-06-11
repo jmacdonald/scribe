@@ -110,7 +110,7 @@ impl GapBuffer {
             // The gap is in the middle of the range being requested.
             // Stitch the surrounding halves together to exclude it.
             let first_half = &self.data[start_offset..self.gap_start];
-            let second_half = &self.data[self.gap_start+self.gap_length..end_offset];
+            let second_half = &self.data[self.gap_start+self.gap_length..=end_offset];
 
             // Allocate a string for the first half.
             let mut data = String::from_utf8_lossy(first_half).into_owned();
@@ -121,7 +121,7 @@ impl GapBuffer {
             data
         } else {
             // No gap in the way; just return the requested data range.
-            String::from_utf8_lossy(&self.data[start_offset..end_offset]).into_owned()
+            String::from_utf8_lossy(&self.data[start_offset..=end_offset]).into_owned()
         };
 
         Some(data)
