@@ -12,7 +12,7 @@ use buffer::Buffer;
 /// to handle all of their undo/redo implementation details. It exposes two methods on the
 /// buffer type to signal the start and end of a group.
 pub struct OperationGroup {
-    operations: Vec<Box<Operation>>,
+    operations: Vec<Box<dyn Operation>>,
 }
 
 impl Operation for OperationGroup {
@@ -32,7 +32,7 @@ impl Operation for OperationGroup {
 
     /// Build a new operation group by manually cloning all of the groups individual operations.
     /// We can't derive this because operations are unsized and need some hand holding.
-    fn clone_operation(&self) -> Box<Operation> {
+    fn clone_operation(&self) -> Box<dyn Operation> {
         Box::new(OperationGroup{
             operations: self.operations.iter().map(|o| (*o).clone_operation()).collect()
         })
@@ -46,7 +46,7 @@ impl OperationGroup {
     }
 
     /// Adds an operation to the group.
-    pub fn add(&mut self, operation: Box<Operation>) {
+    pub fn add(&mut self, operation: Box<dyn Operation>) {
         self.operations.push(operation);
     }
 
