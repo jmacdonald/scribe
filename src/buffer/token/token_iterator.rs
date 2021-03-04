@@ -1,6 +1,6 @@
 use std::cmp;
 use buffer::{Lexeme, Position, Token};
-use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
+use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxReference, SyntaxSet};
 use util::LineIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -12,18 +12,20 @@ pub struct TokenIterator<'a> {
     current_byte_offset: usize,
     current_position: Position,
     line_events: Vec<(usize, ScopeStackOp)>,
+    syntax_set: &'a SyntaxSet,
 }
 
 impl<'a> TokenIterator<'a> {
-    pub fn new(data: &'a str, def: &SyntaxDefinition) -> TokenIterator<'a> {
+    pub fn new(data: &'a str, syntax_ref: &SyntaxReference, syntax_set: &'a SyntaxSet) -> TokenIterator<'a> {
         let mut token_iterator = TokenIterator{
             scopes: ScopeStack::new(),
-            parser: ParseState::new(def),
+            parser: ParseState::new(syntax_ref),
             lines: LineIterator::new(data),
             current_line: None,
             current_byte_offset: 0,
             current_position: Position{ line: 0, offset: 0 },
             line_events: Vec::new(),
+            syntax_set,
         };
 
         // Preload the first line
@@ -113,7 +115,7 @@ impl<'a> TokenIterator<'a> {
         if let Some((line_number, line)) = self.lines.next() {
             // We reverse the line elements so that we can pop them off one at a
             // time, handling each event while allowing us to stop at any point.
-            let mut line_events = self.parser.parse_line(line);
+            let mut line_events = self.parser.parse_line(line, self.syntax_set);
             line_events.reverse();
             self.line_events = line_events;
 
@@ -148,8 +150,9 @@ mod tests {
     #[test]
     fn token_iterator_returns_correct_tokens() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("struct Buffer {\n// comment\n  data: String\n}garbage\n\n", def.unwrap());
+        let syntax_ref = syntax_set.find_syntax_by_extension("rs").unwrap();
+        let iterator = TokenIterator::new(
+            "struct Buffer {\n// comment\n  data: String\n}garbage\n\n", syntax_ref, &syntax_set);
         let mut scope_stack = ScopeStack::new();
         let mut expected_tokens = Vec::new();
         scope_stack.push(Scope::new("source.rust").unwrap());
@@ -257,8 +260,8 @@ mod tests {
 
         // It's important to use a plain text lexer so that the last token
         // doesn't introduce a scope change, forcing the EOL handling logic.
-        let def = syntax_set.find_syntax_plain_text();
-        let iterator = TokenIterator::new("struct", def);
+        let syntax_ref = syntax_set.find_syntax_plain_text();
+        let iterator = TokenIterator::new("struct", syntax_ref, &syntax_set);
         let mut expected_tokens = Vec::new();
         expected_tokens.push(
             Token::Lexeme(Lexeme{
@@ -280,8 +283,8 @@ mod tests {
     #[test]
     fn token_iterator_handles_unicode_characters() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("€16", def.unwrap());
+        let syntax_ref = syntax_set.find_syntax_by_extension("rs").unwrap();
+        let iterator = TokenIterator::new("€16", syntax_ref, &syntax_set);
         let mut scope_stack = ScopeStack::new();
         let mut expected_tokens = Vec::new();
         scope_stack.push(Scope::new("source.rust").unwrap());

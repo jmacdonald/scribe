@@ -4,7 +4,8 @@ use buffer::Buffer;
 use errors::*;
 use std::io;
 use std::path::{Path, PathBuf};
-use syntect::parsing::{SyntaxDefinition, SyntaxSet};
+use std::rc::Rc;
+use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 /// An owned collection of buffers and associated path,
 /// representing a running editor environment.
@@ -13,15 +14,14 @@ pub struct Workspace {
     buffers: Vec<Buffer>,
     next_buffer_id: usize,
     current_buffer_index: Option<usize>,
-    pub syntax_set: SyntaxSet,
+    pub syntax_set: Rc<SyntaxSet>,
 }
 
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
     pub fn new(path: &Path) -> io::Result<Workspace> {
         // Set up syntax parsers.
-        let mut syntax_set = SyntaxSet::load_defaults_newlines();
-        syntax_set.link_syntaxes();
+        let syntax_set = Rc::new(SyntaxSet::load_defaults_newlines());
 
         Ok(Workspace{
             path: path.canonicalize()?,
@@ -64,9 +64,10 @@ impl Workspace {
         // The target index is directly after the current buffer's index.
         let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
 
-        // Add a syntax definition to the buffer, if it doesn't already have one.
-        if buf.syntax_definition.is_none() {
-            buf.syntax_definition = self.find_syntax_definition(&buf);
+        // Add a syntax reference to the buffer, if it doesn't already have one.
+        if buf.syntax_reference.is_none() {
+            buf.syntax_set = Some(self.syntax_set.clone());
+            buf.syntax_reference = Some(self.find_syntax_reference(&buf));
         }
 
         // Insert the buffer and select it.
@@ -365,7 +366,7 @@ impl Workspace {
     /// workspace.add_buffer(buf);
     ///
     /// assert_eq!(
-    ///     workspace.current_buffer().unwrap().syntax_definition.as_ref().unwrap().name,
+    ///     workspace.current_buffer().unwrap().syntax_reference.as_ref().unwrap().name,
     ///     "Plain Text"
     /// );
     ///
@@ -375,23 +376,25 @@ impl Workspace {
     /// workspace.update_current_syntax().unwrap();
     ///
     /// assert_eq!(
-    ///     workspace.current_buffer().unwrap().syntax_definition.as_ref().unwrap().name,
+    ///     workspace.current_buffer().unwrap().syntax_reference.as_ref().unwrap().name,
     ///     "Rust"
     /// );
     ///
     /// ```
     pub fn update_current_syntax(&mut self) -> Result<()> {
         let index = self.current_buffer_index.ok_or(ErrorKind::EmptyWorkspace)?;
-        let syntax_definition = self.find_syntax_definition(&self.buffers[index]);
+        let syntax_reference = self.find_syntax_reference(&self.buffers[index]);
         let buffer = &mut self.buffers[index];
-        buffer.syntax_definition = syntax_definition;
+
+        buffer.syntax_set = Some(self.syntax_set.clone());
+        buffer.syntax_reference = Some(syntax_reference);
 
         Ok(())
     }
 
     // Returns a syntax definition based on the buffer's file extension,
     // falling back to a plain text definition if one cannot be found.
-    fn find_syntax_definition(&self, buffer: &Buffer) -> Option<SyntaxDefinition> {
+    fn find_syntax_reference(&self, buffer: &Buffer) -> SyntaxReference {
         // Find the syntax definition using the buffer's file extension.
         buffer.path.as_ref().and_then(|path|
             path.to_str().and_then(|p| p.split('.').last()).and_then(|ex|
@@ -399,9 +402,9 @@ impl Workspace {
                     Some(s.clone())
                 )
             )
-        ).or_else(||
+        ).unwrap_or_else(||
             // Fall back to a plain text definition.
-            Some(self.syntax_set.find_syntax_plain_text().clone())
+            self.syntax_set.find_syntax_plain_text().clone()
         )
     }
 }
@@ -471,9 +474,9 @@ mod tests {
 
         let name = workspace
           .current_buffer()
-          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+          .and_then(|ref b| b.syntax_reference.as_ref().map(|sd| sd.name.clone()));
 
-        assert!(workspace.current_buffer().unwrap().syntax_definition.is_some());
+        assert!(workspace.current_buffer().unwrap().syntax_reference.is_some());
         assert_eq!(name, Some("Plain Text".to_string()));
     }
 
@@ -485,9 +488,9 @@ mod tests {
 
         let name = workspace
           .current_buffer()
-          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+          .and_then(|ref b| b.syntax_reference.as_ref().map(|sd| sd.name.clone()));
 
-        assert!(workspace.current_buffer().unwrap().syntax_definition.is_some());
+        assert!(workspace.current_buffer().unwrap().syntax_reference.is_some());
         assert_eq!(name, Some("Plain Text".to_string()));
     }
 

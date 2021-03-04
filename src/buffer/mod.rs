@@ -38,7 +38,7 @@ use std::ops::Fn;
 use std::path::{Path, PathBuf};
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
-use syntect::parsing::SyntaxDefinition;
+use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 /// A feature-rich wrapper around an underlying gap buffer.
 ///
@@ -49,6 +49,8 @@ use syntect::parsing::SyntaxDefinition;
 /// If the buffer is configured with a `change_callback`, it will be called with
 /// a position whenever the buffer is modified; it's particularly useful for
 /// cache invalidation.
+///
+/// Further, if `syntax_reference` is set, `syntax_set` _must_ be set as well.
 pub struct Buffer {
     pub id: Option<usize>,
     data: Rc<RefCell<GapBuffer>>,
@@ -56,26 +58,29 @@ pub struct Buffer {
     pub cursor: Cursor,
     history: History,
     operation_group: Option<OperationGroup>,
-    pub syntax_definition: Option<SyntaxDefinition>,
     pub change_callback: Option<Box<dyn Fn(Position)>>,
+    pub syntax_reference: Option<SyntaxReference>,
+    pub syntax_set: Option<Rc<SyntaxSet>>,
 }
 
 impl Default for Buffer {
     fn default() -> Self {
         let data = Rc::new(RefCell::new(GapBuffer::new(String::new())));
         let cursor = Cursor::new(data.clone(), Position{ line: 0, offset: 0 });
+
         let mut history = History::new();
         history.mark();
 
-        Buffer{
+        Buffer {
             id: None,
             data: data.clone(),
             path: None,
             cursor,
             history: History::new(),
             operation_group: None,
-            syntax_definition: None,
             change_callback: None,
+            syntax_reference: None,
+            syntax_set: None,
         }
     }
 }
@@ -130,10 +135,7 @@ impl Buffer {
             data: data.clone(),
             path: Some(path.canonicalize()?),
             cursor,
-            history: History::new(),
-            operation_group: None,
-            syntax_definition: None,
-            change_callback: None,
+            ..Default::default()
         };
 
         // We mark the history at points where the
@@ -206,11 +208,12 @@ impl Buffer {
     /// Produces a set of tokens based on the buffer data
     /// suitable for colorized display, using a lexer for the
     /// buffer data's language and/or format.
-    pub fn tokens(&self) -> Result<TokenSet> {
-        if let Some(ref def) = self.syntax_definition {
-            Ok(TokenSet::new(self.data(), def))
-        } else {
-            Err(ErrorKind::MissingSyntaxDefinition)?
+    pub fn tokens<'a>(&'a self) -> Result<TokenSet<'a>> {
+        match (self.syntax_reference.as_ref(), self.syntax_set.as_ref()) {
+            (Some(syntax_ref), Some(syntax_set)) =>
+                Ok(TokenSet::new(self.data(), syntax_ref, syntax_set)),
+
+            _ => Err(ErrorKind::MissingSyntaxDefinition)?,
         }
     }
 
@@ -501,7 +504,7 @@ impl Buffer {
 
                     // Restore the buffer's ID.
                     self.id = buf.id;
-                    self.syntax_definition = buf.syntax_definition;
+                    self.syntax_reference = buf.syntax_reference;
                     self.change_callback = buf.change_callback;
                 },
                 Err(e) => return Err(e),
@@ -527,23 +530,22 @@ mod tests {
     use buffer::{Buffer, Position};
 
     #[test]
-    fn reload_persists_id_and_syntax_definition() {
+    fn reload_persists_id_and_syntax_reference() {
         let file_path = Path::new("tests/sample/file");
         let mut buffer = Buffer::from_file(file_path).unwrap();
 
         // Load syntax higlighting.
-        let mut syntax_set = SyntaxSet::load_defaults_newlines();
-        syntax_set.link_syntaxes();
-        let syntax_definition = Some(syntax_set.find_syntax_plain_text().clone());
+        let syntax_set = SyntaxSet::load_defaults_newlines();
+        let syntax_reference = Some(syntax_set.find_syntax_plain_text().clone());
 
         // Set the attributes we want to verify are persisted.
         buffer.id = Some(1);
-        buffer.syntax_definition = syntax_definition;
+        buffer.syntax_reference = syntax_reference;
 
         buffer.reload().unwrap();
 
         assert_eq!(buffer.id, Some(1));
-        assert!(buffer.syntax_definition.is_some());
+        assert!(buffer.syntax_reference.is_some());
     }
 
     #[test]
