@@ -6,8 +6,8 @@ use buffer::operation::Operation;
 /// Adding a new operation to the history will clear any previously reversed
 /// operations, which would otherwise have been eligible to be redone.
 pub struct History {
-    previous: Vec<Box<Operation>>,
-    next: Vec<Box<Operation>>,
+    previous: Vec<Box<dyn Operation>>,
+    next: Vec<Box<dyn Operation>>,
     marked_position: Option<usize>
 }
 
@@ -22,7 +22,7 @@ impl History {
     }
 
     /// Store an operation that has already been run.
-    pub fn add(&mut self, operation: Box<Operation>) {
+    pub fn add(&mut self, operation: Box<dyn Operation>) {
         self.previous.push(operation);
         self.next.clear();
 
@@ -35,7 +35,7 @@ impl History {
     }
 
     /// Navigate the history backwards.
-    pub fn previous(&mut self) -> Option<Box<Operation>> {
+    pub fn previous(&mut self) -> Option<Box<dyn Operation>> {
         match self.previous.pop() {
             Some(operation) => {
                 // We've found a previous operation. Before we return it, store a
@@ -48,7 +48,7 @@ impl History {
     }
 
     /// Navigate the history forwards.
-    pub fn next(&mut self) -> Option<Box<Operation>> {
+    pub fn next(&mut self) -> Option<Box<dyn Operation>> {
         match self.next.pop() {
             Some(operation) => {
                 // We've found a subsequent operation. Before we return it, store a

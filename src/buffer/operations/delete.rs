@@ -41,7 +41,7 @@ impl Operation for Delete {
         }
     }
 
-    fn clone_operation(&self) -> Box<Operation> {
+    fn clone_operation(&self) -> Box<dyn Operation> {
         Box::new(self.clone())
     }
 }

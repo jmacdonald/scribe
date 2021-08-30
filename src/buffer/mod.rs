@@ -57,7 +57,7 @@ pub struct Buffer {
     history: History,
     operation_group: Option<OperationGroup>,
     pub syntax_definition: Option<SyntaxDefinition>,
-    pub change_callback: Option<Box<Fn(Position)>>,
+    pub change_callback: Option<Box<dyn Fn(Position)>>,
 }
 
 impl Default for Buffer {
@@ -324,7 +324,7 @@ impl Buffer {
     pub fn undo(&mut self) {
         // Look for an operation to undo. First, check if there's an open, non-empty
         // operation group. If not, try taking the last operation from the buffer history.
-        let operation: Option<Box<Operation>> = match self.operation_group.take() {
+        let operation: Option<Box<dyn Operation>> = match self.operation_group.take() {
             Some(group) => {
                 if group.is_empty() {
                     self.history.previous()
