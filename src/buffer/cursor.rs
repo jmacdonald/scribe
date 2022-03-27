@@ -157,6 +157,55 @@ impl Cursor {
         }
     }
 
+    // Moves the cursor to the previous paragraph
+    pub fn move_to_previous_paragraph(&mut self) {
+        // Don't bother if we are already at the top
+        if self.line = 0 {
+            return;
+        }
+        
+        let data = self.data.borrow().to_string();
+        let mut target_line = self.line - 1;
+        loop {
+            if let Some(line) = data.lines().nth(target_line) {
+                if line.is_empty() {
+                    break;
+                }
+            }
+            if target_line == 0 {
+                return;
+            }
+            target_line -= 1;
+        }
+        let target_position = Position {
+            line: target_line,
+            offset: 0,
+        };
+        self.move_to(target_position);
+    }
+    
+    
+    // Moves the cursor to the next paragraph
+    pub fn move_to_next_paragraph(&mut self) {
+        let data = self.data.borrow().to_string();
+        let mut target_line = self.line + 1;
+        loop {
+            if let Some(line) = data.lines().nth(target_line) {
+                if line.is_empty() {
+                    break;
+                }
+            } else {
+                return;
+            }
+            target_line += 1;
+        }
+        let target_position = Position {
+            line: target_line,
+            offset: 0,
+        };
+        self.move_to(target_position);
+    }
+
     /// Moves the cursor to the last line in the buffer.
     pub fn move_to_last_line(&mut self) {
         // Figure out the number and length of the last line.
