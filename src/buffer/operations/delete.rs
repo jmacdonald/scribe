@@ -1,5 +1,5 @@
-use buffer::operation::Operation;
-use buffer::{Buffer, Position, Range};
+use crate::buffer::operation::Operation;
+use crate::buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 
 /// A reversible buffer delete operation.
@@ -130,8 +130,8 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
     use super::Delete;
-    use buffer::{Buffer, Position, Range};
-    use buffer::operation::Operation;
+    use crate::buffer::{Buffer, Position, Range};
+    use crate::buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_remove_and_add_content_without_newlines_at_cursor_position() {

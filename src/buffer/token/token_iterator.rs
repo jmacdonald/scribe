@@ -1,7 +1,7 @@
 use std::cmp;
-use buffer::{Lexeme, Position, Token};
+use crate::buffer::{Lexeme, Position, Token};
 use syntect::parsing::{ParseState, ScopeStack, ScopeStackOp, SyntaxDefinition};
-use util::LineIterator;
+use crate::util::LineIterator;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct TokenIterator<'a> {
@@ -142,7 +142,7 @@ impl<'a> Iterator for TokenIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::TokenIterator;
-    use buffer::{Lexeme, Position, ScopeStack, Token};
+    use crate::buffer::{Lexeme, Position, ScopeStack, Token};
     use syntect::parsing::{Scope, SyntaxSet};
 
     #[test]

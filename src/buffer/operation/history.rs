@@ -1,4 +1,4 @@
-use buffer::operation::Operation;
+use crate::buffer::operation::Operation;
 
 /// Tracks a series of operations.
 ///
@@ -76,9 +76,9 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::History;
-    use buffer::{Buffer, Position};
-    use buffer::operations::Insert;
-    use buffer::operation::Operation;
+    use crate::buffer::{Buffer, Position};
+    use crate::buffer::operations::Insert;
+    use crate::buffer::operation::Operation;
 
     #[test]
     fn previous_and_next_return_the_correct_operations() {

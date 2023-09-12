@@ -1,4 +1,4 @@
-use buffer::{Position, Range};
+use crate::buffer::{Position, Range};
 
 /// A more concise expression for ranges spanning complete lines.
 #[derive(PartialEq, Debug)]

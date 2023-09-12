@@ -1,5 +1,5 @@
 use super::Operation;
-use buffer::Buffer;
+use crate::buffer::Buffer;
 
 /// A collection of operations run as a single/atomic operation.
 ///
@@ -86,9 +86,9 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::OperationGroup;
-    use buffer::operations::Insert;
-    use buffer::{Buffer, Position};
-    use buffer::operation::Operation;
+    use crate::buffer::operations::Insert;
+    use crate::buffer::{Buffer, Position};
+    use crate::buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {

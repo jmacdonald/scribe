@@ -1,4 +1,4 @@
-use buffer::Distance;
+use crate::buffer::Distance;
 use std::cmp::{PartialOrd, Ordering};
 use std::default::Default;
 use std::ops::{Add, AddAssign};
@@ -81,7 +81,7 @@ impl Position {
 
 #[cfg(test)]
 mod tests {
-    use buffer::{Distance, Position};
+    use crate::buffer::{Distance, Position};
 
     #[test]
     fn compare_works_when_lines_differ() {

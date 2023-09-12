@@ -2,7 +2,7 @@
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::cell::RefCell;
-use buffer::{Position, GapBuffer};
+use crate::buffer::{Position, GapBuffer};
 use unicode_segmentation::UnicodeSegmentation;
 
 /// Read-only wrapper for a `Position`, to allow field level access to a
@@ -208,7 +208,7 @@ impl Cursor {
 
 #[cfg(test)]
 mod tests {
-    use buffer::{Cursor, GapBuffer, Position};
+    use crate::buffer::{Cursor, GapBuffer, Position};
     use std::rc::Rc;
     use std::cell::RefCell;
 

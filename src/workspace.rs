@@ -1,7 +1,7 @@
 //! Buffer and working directory management.
 
-use buffer::Buffer;
-use errors::*;
+use crate::buffer::Buffer;
+use crate::errors::*;
 use std::io;
 use std::path::{Path, PathBuf};
 use syntect::parsing::{SyntaxDefinition, SyntaxSet};
@@ -409,7 +409,7 @@ impl Workspace {
 #[cfg(test)]
 mod tests {
     use super::Workspace;
-    use buffer::Buffer;
+    use crate::buffer::Buffer;
     use std::path::Path;
     use std::env;
 

@@ -13,6 +13,6 @@ pub mod util;
 mod errors;
 mod workspace;
 
-pub use errors::*;
-pub use buffer::Buffer;
-pub use workspace::Workspace;
+pub use crate::errors::*;
+pub use crate::buffer::Buffer;
+pub use crate::workspace::Workspace;

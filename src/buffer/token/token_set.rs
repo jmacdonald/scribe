@@ -1,5 +1,5 @@
 use syntect::parsing::SyntaxDefinition;
-use buffer::token::TokenIterator;
+use crate::buffer::token::TokenIterator;
 
 pub struct TokenSet<'a> {
     data: String,

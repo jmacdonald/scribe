@@ -1,4 +1,4 @@
-use buffer::Buffer;
+use crate::buffer::Buffer;
 pub use self::group::OperationGroup;
 
 pub mod group;

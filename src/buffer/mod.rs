@@ -26,7 +26,7 @@ mod operations;
 mod token;
 
 // Buffer type implementation
-use errors::*;
+use crate::errors::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::default::Default;
@@ -524,7 +524,7 @@ mod tests {
     use std::cell::RefCell;
     use std::path::Path;
     use std::rc::Rc;
-    use buffer::{Buffer, Position};
+    use crate::buffer::{Buffer, Position};
 
     #[test]
     fn reload_persists_id_and_syntax_definition() {

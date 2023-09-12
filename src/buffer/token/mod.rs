@@ -4,7 +4,7 @@ mod token_set;
 pub use self::token_iterator::TokenIterator;
 pub use self::token_set::TokenSet;
 
-use buffer::Position;
+use crate::buffer::Position;
 use syntect::parsing::ScopeStack;
 
 #[derive(Debug, PartialEq)]

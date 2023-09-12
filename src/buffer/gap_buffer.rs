@@ -301,7 +301,7 @@ impl GapBuffer {
 
 #[cfg(test)]
 mod tests {
-    use buffer::{GapBuffer, Position, Range};
+    use crate::buffer::{GapBuffer, Position, Range};
 
     #[test]
     fn move_gap_works() {

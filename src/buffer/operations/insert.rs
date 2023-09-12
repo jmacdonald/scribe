@@ -1,5 +1,5 @@
-use buffer::operation::Operation;
-use buffer::{Buffer, Position, Range};
+use crate::buffer::operation::Operation;
+use crate::buffer::{Buffer, Position, Range};
 use std::clone::Clone;
 use std::convert::Into;
 use unicode_segmentation::UnicodeSegmentation;
@@ -113,9 +113,9 @@ mod tests {
     use std::cell::RefCell;
     use std::rc::Rc;
     use super::Insert;
-    use buffer::Buffer;
-    use buffer::position::Position;
-    use buffer::operation::Operation;
+    use crate::buffer::Buffer;
+    use crate::buffer::position::Position;
+    use crate::buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {

@@ -1,4 +1,4 @@
-use buffer::Position;
+use crate::buffer::Position;
 
 /// A two-position type, representing a span of characters.
 #[derive(Clone, Debug, PartialEq)]
@@ -60,7 +60,7 @@ impl Range {
 
 #[cfg(test)]
 mod tests {
-    use buffer::Position;
+    use crate::buffer::Position;
     use super::Range;
 
     #[test]
