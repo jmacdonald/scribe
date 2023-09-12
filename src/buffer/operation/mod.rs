@@ -16,5 +16,5 @@ pub mod history;
 pub trait Operation {
     fn run(&mut self, buffer: &mut Buffer);
     fn reverse(&mut self, buffer: &mut Buffer);
-    fn clone_operation(&self) -> Box<Operation>;
+    fn clone_operation(&self) -> Box<dyn Operation>;
 }
