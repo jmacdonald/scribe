@@ -128,7 +128,7 @@ impl Buffer {
         let mut buffer =  Buffer{
             id: None,
             data: data.clone(),
-            path: Some(try!(path.canonicalize())),
+            path: Some(path.canonicalize()?),
             cursor,
             history: History::new(),
             operation_group: None,
