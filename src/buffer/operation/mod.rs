@@ -14,7 +14,7 @@ pub mod history;
 /// Buffer type to expose their functionality; these should build, run, and
 /// add the operation objects to the buffer history.
 pub trait Operation {
-    fn run(&mut self, &mut Buffer);
-    fn reverse(&mut self, &mut Buffer);
+    fn run(&mut self, buffer: &mut Buffer);
+    fn reverse(&mut self, buffer: &mut Buffer);
     fn clone_operation(&self) -> Box<Operation>;
 }
