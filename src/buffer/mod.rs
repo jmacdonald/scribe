@@ -26,7 +26,6 @@ mod operations;
 mod token;
 
 // Buffer type implementation
-use crate::errors::*;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::default::Default;
@@ -38,13 +37,15 @@ use std::ops::Fn;
 use std::path::{Path, PathBuf};
 use self::operation::{Operation, OperationGroup};
 use self::operation::history::History;
-use syntect::parsing::SyntaxDefinition;
+use syntect::parsing::SyntaxReference;
 
 /// A feature-rich wrapper around an underlying gap buffer.
 ///
-/// The buffer type wraps an in-memory buffer, providing file I/O, a bounds-checked moveable
-/// cursor, undo/redo history, simple type/format detection, and lexing (producing categorized
-/// tokens suitable for syntax-highlighted display).
+/// The buffer type wraps an in-memory buffer, providing file I/O, a
+/// bounds-checked moveable cursor, undo/redo history, simple type/format
+/// detection. When managed through a Workspace, its id field is populated with
+/// a unique value within the workspace, and its data can be lexed, producing
+/// categorized tokens suitable for syntax-highlighted display.
 ///
 /// If the buffer is configured with a `change_callback`, it will be called with
 /// a position whenever the buffer is modified; it's particularly useful for
@@ -56,7 +57,7 @@ pub struct Buffer {
     pub cursor: Cursor,
     history: History,
     operation_group: Option<OperationGroup>,
-    pub syntax_definition: Option<SyntaxDefinition>,
+    pub syntax_definition: Option<SyntaxReference>,
     pub change_callback: Option<Box<dyn Fn(Position)>>,
 }
 
@@ -201,68 +202,6 @@ impl Buffer {
         self.history.mark();
 
         Ok(())
-    }
-
-    /// Produces a set of tokens based on the buffer data
-    /// suitable for colorized display, using a lexer for the
-    /// buffer data's language and/or format.
-    pub fn tokens(&self) -> Result<TokenSet> {
-        if let Some(ref def) = self.syntax_definition {
-            Ok(TokenSet::new(self.data(), def))
-        } else {
-            Err(ErrorKind::MissingSyntaxDefinition)?
-        }
-    }
-
-    /// Returns the scope stack for the token at the cursor location.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use scribe::Buffer;
-    /// use scribe::buffer::{Position, Scope, ScopeStack};
-    /// # use scribe::Workspace;
-    /// # use std::path::PathBuf;
-    /// # use std::env;
-    ///
-    /// // Set up a buffer with Rust source content and
-    /// // move the cursor to something of interest.
-    /// let mut buffer = Buffer::new();
-    /// buffer.insert("struct Buffer");
-    /// buffer.cursor.move_to(Position{ line: 0, offset: 7 });
-    ///
-    /// // Omitted code to set up workspace / buffer syntax definition.
-    /// # let path = PathBuf::from("file.rs");
-    /// # buffer.path = Some(path);
-    /// # let mut workspace = Workspace::new(&env::current_dir().unwrap()).unwrap();
-    /// # workspace.add_buffer(buffer);
-    /// #
-    /// assert_eq!(
-    ///     workspace.current_buffer().unwrap().current_scope().unwrap(),
-    ///     ScopeStack::from_vec(
-    ///         vec![
-    ///             Scope::new("source.rust").unwrap(),
-    ///             Scope::new("meta.struct.rust").unwrap(),
-    ///             Scope::new("entity.name.struct.rust").unwrap()
-    ///         ]
-    ///     )
-    /// );
-    /// ```
-    pub fn current_scope(&self) -> Result<ScopeStack> {
-        let mut scope = None;
-        let tokens = self.tokens()?;
-
-        for token in tokens.iter() {
-            if let Token::Lexeme(lexeme) = token {
-                if lexeme.position > *self.cursor {
-                    break;
-                }
-
-                scope = Some(lexeme.scope);
-            }
-        }
-
-        scope.ok_or_else(|| ErrorKind::MissingScope.into())
     }
 
     /// Returns the file name portion of the buffer's path, if
@@ -515,6 +454,35 @@ impl Buffer {
 
         Ok(())
     }
+
+    /// Returns the buffer path's file extension.
+    ///
+    /// If the buffer has no path configured, or if the filename
+    /// portion of the path contains no extension, it returns None.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::Buffer;
+    /// use std::path::PathBuf;
+    ///
+    /// let mut buffer = Buffer::new();
+    ///
+    /// buffer.path = Some(PathBuf::from("file.txt"));
+    /// assert_eq!(buffer.file_extension().unwrap(), "txt");
+    ///
+    /// buffer.path = Some(PathBuf::from("Makefile"));
+    /// assert!(buffer.file_extension().is_none());
+    /// ```
+    pub fn file_extension(&self) -> Option<String> {
+        self.path.as_ref().and_then(|p| {
+            p.extension().and_then(|e| {
+                if e.len() > 0 { return Some(e.to_string_lossy().into_owned()) }
+
+                None
+            })
+        })
+    }
 }
 
 #[cfg(test)]
@@ -531,9 +499,8 @@ mod tests {
         let file_path = Path::new("tests/sample/file");
         let mut buffer = Buffer::from_file(file_path).unwrap();
 
-        // Load syntax higlighting.
-        let mut syntax_set = SyntaxSet::load_defaults_newlines();
-        syntax_set.link_syntaxes();
+        // Load syntax highlighting.
+        let syntax_set = SyntaxSet::load_defaults_newlines();
         let syntax_definition = Some(syntax_set.find_syntax_plain_text().clone());
 
         // Set the attributes we want to verify are persisted.
