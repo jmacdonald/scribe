@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/jmacdonald/scribe.svg?branch=master)](https://travis-ci.org/jmacdonald/scribe)
-
 # Scribe: A text editor toolkit
 
 Scribe was extracted from [Amp](https://amp.rs), a text editor written in Rust.
