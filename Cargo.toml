@@ -3,7 +3,7 @@
 edition = "2021"
 
 name = "scribe"
-version = "0.7.2"
+version = "0.8.0"
 authors = ["Jordan MacDonald <jordan@wastedintelligence.com>"]
 description = "Text editor toolkit."
 homepage = "https://github.com/jmacdonald/scribe"

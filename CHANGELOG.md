@@ -1,3 +1,59 @@
+### 0.8.0
+
+Lots of changes, some of which break public APIs. Almost all of these are
+related to a syntect upgrade, which jumps _three_ major versions, from v2 to v5.
+
+#### Removed methods
+
+* Buffer::tokens(&self)
+* Buffer::current_scope(&self)
+* Workspace::current_buffer(&mut self)
+* Workspace::contains_buffer_with_path(&self, &Path) -> bool
+
+#### New methods
+
+* Buffer::file_extension(&self) -> Option<String>
+* Workspace::current_buffer_tokens(&'a self) -> Result<TokenSet<'a>>
+
+#### Changed methods
+
+* TokenSet::new(String, &'a SyntaxDefinition) -> TokenSet<'a>
+  * is now TokenSet::new(String, &'a SyntaxReference, &'a SyntaxSet) -> TokenSet<'a>
+* TokenSet::iter(&self) -> TokenIterator
+  * is now TokenSet::iter(&self) -> Result<TokenIterator>
+* TokenIterator::new(&'a str, &'a SyntaxDefinition) -> TokenIterator<'a>
+  * is now TokenIterator::new(&'a str, &'a SyntaxReference, &'a SyntaxSet) -> Result<TokenIterator<'a>>
+* Workspace::new(&Path) -> Result<Workspace>
+  * is now Workspace::new(&Path, Option<&Path>) -> Result<Workspace> to allow loading user syntax definitions during construction
+
+#### Buffer tokenization
+
+Tokenization previously only required a syntax definition, but now requires a
+SyntaxSet too. As a result, buffers are no longer able to produce a TokenSet
+using only their own fields. Given this added dependency, setting up
+tokenization is now the responsibility of Workspace::current_buffer_tokens.
+
+#### Current workspace buffer
+
+Accessing the workspace's current buffer was previously done using
+Workspace::current_buffer(&mut self). Despite the encapsulation benefits this
+accessor approach provides, Rust isn't smart enough to infer that we're only
+borrowing one field, and the entire workspace is borrowed for the given
+lifetime. This was incompatible with the new tokenization requirements, which
+use both the syntax set from the workspace and the definition from the buffer;
+calling current_buffer() on the workspace would make accessing its syntax_set
+impossible.
+
+To solve this, the current buffer is now accessed directly as a field.
+
+#### Error propagation
+
+Syntect now returns proper errors instead of panicking. To make proper use of
+these, the TokenIterator type has been updated to handle Result-based returns.
+When an error is discovered, iteration is halted, and the error is stored in a
+public field on the iterator. This allows consumers to check for errors after
+iterating, rather than on every returned value during iteration.
+
 ### 0.7.2
 
 * Renamed Distance type's `from_str` method to `of_str`, to prevent ambiguity
