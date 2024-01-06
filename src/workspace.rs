@@ -20,10 +20,15 @@ pub struct Workspace {
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
     pub fn new(path: &Path, syntax_definitions: Option<&Path>) -> Result<Workspace> {
-        // Set up syntax parsers.
-        let mut syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
+        let mut syntax_set = SyntaxSet::load_defaults_newlines();
+
         if let Some(path) = syntax_definitions {
-            syntax_builder.add_from_folder(path, true)?;
+            // Add user syntaxes to the set.
+            let mut builder = syntax_set.into_builder();
+            builder.add_from_folder(path, true)?;
+
+            // Build the augmented syntax set.
+            syntax_set = builder.build();
         }
 
         Ok(Workspace{
@@ -32,7 +37,7 @@ impl Workspace {
             next_buffer_id: 0,
             current_buffer: None,
             current_buffer_index: None,
-            syntax_set: syntax_builder.build(),
+            syntax_set
         })
     }
 
