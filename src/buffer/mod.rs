@@ -1,8 +1,5 @@
 //! Types related to in-memory buffers.
 
-// Lexing library
-extern crate luthor;
-
 // Published API
 pub use self::gap_buffer::GapBuffer;
 pub use self::distance::Distance;
