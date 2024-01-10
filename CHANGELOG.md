@@ -1,3 +1,9 @@
+### 0.8.1
+
+* Removed unused luthor dependency
+* Upgrade unicode-segmentation dependency
+* Use semver-based dependency format
+
 ### 0.8.0
 
 Lots of changes, some of which break public APIs. Almost all of these are
