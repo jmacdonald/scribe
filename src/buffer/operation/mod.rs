@@ -3,6 +3,8 @@ pub use self::group::OperationGroup;
 
 pub mod group;
 pub mod history;
+mod insert;
+mod delete;
 
 /// A reversible buffer operation.
 ///

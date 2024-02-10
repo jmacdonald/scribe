@@ -77,8 +77,8 @@ impl History {
 mod tests {
     use super::History;
     use crate::buffer::{Buffer, Position};
-    use crate::buffer::operations::Insert;
     use crate::buffer::operation::Operation;
+    use crate::buffer::operation::insert::Insert;
 
     #[test]
     fn previous_and_next_return_the_correct_operations() {

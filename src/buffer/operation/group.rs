@@ -86,9 +86,9 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::OperationGroup;
-    use crate::buffer::operations::Insert;
     use crate::buffer::{Buffer, Position};
     use crate::buffer::operation::Operation;
+    use crate::buffer::operation::insert::Insert;
 
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {

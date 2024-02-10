@@ -19,7 +19,6 @@ mod range;
 mod line_range;
 mod cursor;
 mod operation;
-mod operations;
 mod token;
 
 // Buffer type implementation
