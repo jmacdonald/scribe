@@ -185,9 +185,9 @@ impl Buffer {
         // Try to open and write to the file, returning any errors encountered.
         let mut file =
             if let Some(ref path) = self.path {
-                File::create(&path)?
+                File::create(path)?
             } else {
-                File::create(&PathBuf::new())?
+                File::create(PathBuf::new())?
             };
 
         // We use to_string here because we don't want to write the gap contents.
@@ -214,20 +214,11 @@ impl Buffer {
     /// assert_eq!(buffer.file_name().unwrap(), "file");
     /// ```
     pub fn file_name(&self) -> Option<String> {
-        match self.path {
-            Some(ref path) => {
-                match path.file_name() {
-                    Some(file_name) => {
-                        match file_name.to_str() {
-                            Some(utf8_file_name) => Some(utf8_file_name.to_string()),
-                            None => None,
-                        }
-                    },
-                    None => None,
-                }
-            },
-            None => None,
-        }
+        self.path.as_ref().and_then(|p| {
+            p.file_name().and_then(|f| {
+                f.to_str().map(|s| s.to_string())
+            })
+        })
     }
 
 
@@ -479,7 +470,7 @@ impl Buffer {
     pub fn file_extension(&self) -> Option<String> {
         self.path.as_ref().and_then(|p| {
             p.extension().and_then(|e| {
-                if e.len() > 0 { return Some(e.to_string_lossy().into_owned()) }
+                if !e.is_empty() { return Some(e.to_string_lossy().into_owned()) }
 
                 None
             })

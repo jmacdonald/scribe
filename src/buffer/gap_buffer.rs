@@ -206,7 +206,7 @@ impl GapBuffer {
     /// assert_eq!(buffer.in_bounds(&out_of_bounds), false);
     /// ```
     pub fn in_bounds(&self, position: &Position) -> bool {
-        self.find_offset(position) != None
+        self.find_offset(position).is_some()
     }
 
     // Maps a position to its offset equivalent in the data.
@@ -215,7 +215,7 @@ impl GapBuffer {
         let mut line = 0;
         let mut line_offset = 0;
 
-        for (offset, grapheme) in (&*first_half).grapheme_indices(true) {
+        for (offset, grapheme) in (*first_half).grapheme_indices(true) {
             // Check to see if we've found the position yet.
             if line == position.line && line_offset == position.offset {
                 return Some(offset);
@@ -238,7 +238,7 @@ impl GapBuffer {
 
         // We haven't reached the position yet, so we'll move on to the other half.
         let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]);
-        for (offset, grapheme) in (&*second_half).grapheme_indices(true) {
+        for (offset, grapheme) in (*second_half).grapheme_indices(true) {
             // Check to see if we've found the position yet.
             if line == position.line && line_offset == position.offset {
                 return Some(self.gap_start + self.gap_length + offset);

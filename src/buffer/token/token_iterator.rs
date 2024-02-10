@@ -135,7 +135,7 @@ impl<'a> TokenIterator<'a> {
         if let Some((line_number, line)) = self.lines.next() {
             // We reverse the line elements so that we can pop them off one at a
             // time, handling each event while allowing us to stop at any point.
-            let mut line_events = self.parser.parse_line(line, &self.syntaxes)?;
+            let mut line_events = self.parser.parse_line(line, self.syntaxes)?;
             line_events.reverse();
             self.line_events = line_events;
 

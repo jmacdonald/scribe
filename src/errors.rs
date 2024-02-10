@@ -1,4 +1,4 @@
-use syntect;
+
 
 error_chain! {
     errors {

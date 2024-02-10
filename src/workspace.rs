@@ -187,7 +187,7 @@ impl Workspace {
             if self.buffers.is_empty() {
                 self.current_buffer_index = None;
             } else {
-                self.select_buffer(index.checked_sub(1).unwrap_or(0));
+                self.select_buffer(index.saturating_sub(1));
             }
         };
     }
@@ -226,7 +226,7 @@ impl Workspace {
                     self.select_buffer(self.buffers.len()-1);
                 }
             },
-            None => return,
+            None => (),
         }
     }
 
@@ -264,7 +264,7 @@ impl Workspace {
                     self.select_buffer(index+1);
                 }
             },
-            None => return,
+            None => (),
         }
     }
 
@@ -300,7 +300,7 @@ impl Workspace {
     ///   1
     /// );
     /// ```
-    pub fn current_buffer_tokens<'a>(&'a self) -> Result<TokenSet<'a>> {
+    pub fn current_buffer_tokens(&self) -> Result<TokenSet<'_>> {
         let buf = self.current_buffer.as_ref().ok_or(ErrorKind::EmptyWorkspace)?;
         let data = buf.data();
         let syntax_definition = buf.syntax_definition.as_ref().ok_or(
@@ -358,7 +358,7 @@ impl Workspace {
             self.syntax_set.find_syntax_by_extension(&ex)
         }).or_else(|| {
             Some(self.syntax_set.find_syntax_plain_text())
-        }).map(|d| d.clone());
+        }).cloned();
         buffer.syntax_definition = definition;
 
         Ok(())
@@ -396,7 +396,7 @@ impl Workspace {
 
             // If we found a matching buffer, select it and propagate the
             // result of that operation. Otherwise, return false.
-            return index.map(|index| self.select_buffer(index)).unwrap_or(false);
+            index.map(|index| self.select_buffer(index)).unwrap_or(false)
         } else {
             false
         }
