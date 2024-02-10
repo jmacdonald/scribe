@@ -3,6 +3,7 @@
 use super::Position;
 use super::Range;
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 use unicode_segmentation::UnicodeSegmentation;
 
 /// A UTF-8 string buffer designed to minimize reallocations,
@@ -269,24 +270,28 @@ impl GapBuffer {
             return;
         }
 
-        if offset < self.gap_start {
-            // Shift the gap to the left one byte at a time.
-            for index in (offset..self.gap_start).rev() {
-                self.data[index + self.gap_length] = self.data[index];
-                self.data[index] = 0;
-            }
+        match offset.cmp(&self.gap_start) {
+            Ordering::Less => {
+                // Shift the gap to the left one byte at a time.
+                for index in (offset..self.gap_start).rev() {
+                    self.data[index + self.gap_length] = self.data[index];
+                    self.data[index] = 0;
+                }
 
-            self.gap_start = offset;
-        } else if offset > self.gap_start {
-            // Shift the gap to the right one byte at a time.
-            for index in self.gap_start + self.gap_length..offset {
-                self.data[index-self.gap_length] = self.data[index];
-                self.data[index] = 0;
-            }
+                self.gap_start = offset;
+            },
+            Ordering::Greater => {
+                // Shift the gap to the right one byte at a time.
+                for index in self.gap_start + self.gap_length..offset {
+                    self.data[index-self.gap_length] = self.data[index];
+                    self.data[index] = 0;
+                }
 
-            // Because the offset was after the gap, its value included the
-            // gap length. We must remove it to determine the starting point.
-            self.gap_start = offset - self.gap_length;
+                // Because the offset was after the gap, its value included the
+                // gap length. We must remove it to determine the starting point.
+                self.gap_start = offset - self.gap_length;
+            },
+            Ordering::Equal => (), // already at requested offset; NOP
         }
     }
 
