@@ -4,6 +4,7 @@ use super::Position;
 use super::Range;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::fmt;
 use unicode_segmentation::UnicodeSegmentation;
 
 /// A UTF-8 string buffer designed to minimize reallocations,
@@ -126,21 +127,6 @@ impl GapBuffer {
         };
 
         Some(data)
-    }
-
-    /// Returns a string representation of the buffer data (without gap).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use scribe::buffer::GapBuffer;
-    ///
-    /// let mut buffer = GapBuffer::new("my data".to_string());
-    /// assert_eq!(buffer.to_string(), "my data");
-    /// ```
-    pub fn to_string(&self) -> String {
-        String::from_utf8_lossy(&self.data[..self.gap_start]).to_string() +
-        &*String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..])
     }
 
     /// Removes the specified range of data from the buffer.
@@ -301,6 +287,15 @@ impl GapBuffer {
             self.gap_start+=1;
             self.gap_length-=1;
         }
+    }
+}
+
+impl fmt::Display for GapBuffer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let first_half = String::from_utf8_lossy(&self.data[..self.gap_start]);
+        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]);
+
+        write!(f, "{}{}", first_half, second_half)
     }
 }
 
