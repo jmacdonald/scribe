@@ -218,15 +218,12 @@ impl Workspace {
     /// workspace.previous_buffer();
     /// ```
     pub fn previous_buffer(&mut self) {
-        match self.current_buffer_index {
-            Some(index) => {
-                if index > 0 {
-                    self.select_buffer(index-1);
-                } else {
-                    self.select_buffer(self.buffers.len()-1);
-                }
-            },
-            None => (),
+        if let Some(index) = self.current_buffer_index {
+            if index > 0 {
+                self.select_buffer(index-1);
+            } else {
+                self.select_buffer(self.buffers.len()-1);
+            }
         }
     }
 
@@ -256,15 +253,12 @@ impl Workspace {
     /// workspace.next_buffer();
     /// ```
     pub fn next_buffer(&mut self) {
-        match self.current_buffer_index {
-            Some(index) => {
-                if index == self.buffers.len()-1 {
-                    self.select_buffer(0);
-                } else {
-                    self.select_buffer(index+1);
-                }
-            },
-            None => (),
+        if let Some(index) = self.current_buffer_index {
+            if index == self.buffers.len()-1 {
+                self.select_buffer(0);
+            } else {
+                self.select_buffer(index+1);
+            }
         }
     }
 
