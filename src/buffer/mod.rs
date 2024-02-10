@@ -410,8 +410,10 @@ impl Buffer {
     }
 
     /// Reloads the buffer from disk, discarding any in-memory modifications and
-    /// history, as well as resetting the cursor to its initial (0,0) position.
-    /// The buffer's ID and syntax definition are persisted.
+    /// history. This method will make best efforts to retain the full cursor
+    /// position, then cursor line, and will ultimately fall back to resetting
+    /// the cursor to its initial (0,0) position if these fail. The buffer's ID,
+    /// syntax definition, and change_callback are always persisted.
     ///
     /// # Examples
     ///
@@ -422,12 +424,11 @@ impl Buffer {
     /// let file_path = Path::new("tests/sample/file");
     /// let mut buffer = Buffer::from_file(file_path).unwrap();
     /// buffer.insert("scribe\nlibrary\n");
+    /// buffer.cursor.move_to(Position { line: 1, offset: 0 });
     /// buffer.reload();
     ///
     /// assert_eq!(buffer.data(), "it works!\n");
-    /// assert_eq!(*buffer.cursor, Position{ line: 0, offset: 0 });
-    /// # buffer.undo();
-    /// # assert_eq!(buffer.data(), "it works!\n");
+    /// assert_eq!(*buffer.cursor, Position{ line: 1, offset: 0 });
     /// ```
     pub fn reload(&mut self) -> io::Result<()> {
         if let Some(ref path) = self.path.clone() {
@@ -435,10 +436,15 @@ impl Buffer {
                 Ok(mut buf) => {
                     mem::swap(self, &mut buf);
 
-                    // Restore the buffer's ID.
+                    // Restore sticky buffer attributes.
                     self.id = buf.id;
                     self.syntax_definition = buf.syntax_definition;
                     self.change_callback = buf.change_callback;
+
+                    // Try to retain cursor position or line.
+                    if !self.cursor.move_to(*buf.cursor) {
+                        self.cursor.move_to(Position{ line: buf.cursor.line, offset: 0 });
+                    }
                 },
                 Err(e) => return Err(e),
             }
@@ -508,6 +514,57 @@ mod tests {
 
         assert_eq!(buffer.id, Some(1));
         assert!(buffer.syntax_definition.is_some());
+    }
+
+    #[test]
+    fn reload_retains_full_position_when_possible() {
+        // Load a buffer with some data and modify it.
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+
+        // Move to a position that will exist after reload.
+        buffer.cursor.move_to(Position { line: 0, offset: 3 });
+
+        // Reload the buffer
+        buffer.reload().unwrap();
+
+        // Verify that the position is retained.
+        assert_eq!(*buffer.cursor, Position { line: 0, offset: 3 });
+    }
+
+    #[test]
+    fn reload_retains_position_line_when_possible() {
+        // Load a buffer with some data and modify it.
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+
+        // Move to an in-memory-only position whose line
+        // is also available in the on-disk version.
+        buffer.insert("amp\neditor");
+        buffer.cursor.move_to(Position { line: 1, offset: 1 });
+
+        // Reload the buffer
+        buffer.reload().unwrap();
+
+        // Verify that the position is set to the start of the same line.
+        assert_eq!(*buffer.cursor, Position { line: 1, offset: 0 });
+    }
+
+    #[test]
+    fn reload_discards_position_when_impossible() {
+        // Load a buffer with some data and modify it.
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+
+        // Move to a truly in-memory-only position.
+        buffer.insert("\namp\neditor");
+        buffer.cursor.move_to(Position { line: 2, offset: 1 });
+
+        // Reload the buffer
+        buffer.reload().unwrap();
+
+        // Verify that the position is discarded.
+        assert_eq!(*buffer.cursor, Position::new());
     }
 
     #[test]
