@@ -1,3 +1,9 @@
+### 0.8.2
+
+* Update Buffer `reload` method to preserve cursor position or line when
+  possible.
+* Replace GapBuffer `to_string` method with `fmt::Display` trait implementation.
+
 ### 0.8.1
 
 * Removed unused luthor dependency
