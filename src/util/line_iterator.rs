@@ -3,17 +3,17 @@ pub struct LineIterator<'a> {
     line_number: usize,
     line_start: usize,
     line_end: usize,
-    done: bool
+    done: bool,
 }
 
 impl<'a> LineIterator<'a> {
     pub fn new(data: &str) -> LineIterator {
-        LineIterator{
+        LineIterator {
             data,
             line_number: 0,
             line_start: 0,
             line_end: 0,
-            done: false
+            done: false,
         }
     }
 
@@ -27,7 +27,7 @@ impl<'a> Iterator for LineIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
-            return None
+            return None;
         }
 
         // Move the range beyond its previous position.
@@ -48,12 +48,7 @@ impl<'a> Iterator for LineIterator<'a> {
             }
         }
 
-        let line = Some((
-            self.line_number,
-            &self.data[
-                self.line_start..self.line_end
-            ]
-        ));
+        let line = Some((self.line_number, &self.data[self.line_start..self.line_end]));
 
         // Flag the iterator as done as soon as we've exhausted its data,
         // and have given one last line for data with a trailing newline.

@@ -33,8 +33,12 @@ impl Operation for OperationGroup {
     /// Build a new operation group by manually cloning all of the groups individual operations.
     /// We can't derive this because operations are unsized and need some hand holding.
     fn clone_operation(&self) -> Box<dyn Operation> {
-        Box::new(OperationGroup{
-            operations: self.operations.iter().map(|o| (*o).clone_operation()).collect()
+        Box::new(OperationGroup {
+            operations: self
+                .operations
+                .iter()
+                .map(|o| (*o).clone_operation())
+                .collect(),
         })
     }
 }
@@ -42,7 +46,9 @@ impl Operation for OperationGroup {
 impl OperationGroup {
     /// Creates a new empty operation group.
     pub fn new() -> OperationGroup {
-        OperationGroup{ operations: Vec::new() }
+        OperationGroup {
+            operations: Vec::new(),
+        }
     }
 
     /// Adds an operation to the group.
@@ -86,9 +92,9 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::OperationGroup;
-    use crate::buffer::{Buffer, Position};
-    use crate::buffer::operation::Operation;
     use crate::buffer::operation::insert::Insert;
+    use crate::buffer::operation::Operation;
+    use crate::buffer::{Buffer, Position};
 
     #[test]
     fn run_and_reverse_call_themselves_on_all_operations() {
@@ -96,8 +102,14 @@ mod tests {
         let mut buffer = Buffer::new();
 
         // Push two insert operations into the group.
-        let first = Box::new(Insert::new("something".to_string(), Position{ line: 0, offset: 0 }));
-        let second = Box::new(Insert::new(" else".to_string(), Position{ line: 0, offset: 9 }));
+        let first = Box::new(Insert::new(
+            "something".to_string(),
+            Position { line: 0, offset: 0 },
+        ));
+        let second = Box::new(Insert::new(
+            " else".to_string(),
+            Position { line: 0, offset: 9 },
+        ));
         group.add(first);
         group.add(second);
 

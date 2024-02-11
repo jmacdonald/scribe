@@ -32,7 +32,10 @@ impl Operation for Delete {
 
     fn reverse(&mut self, buffer: &mut Buffer) {
         if let Some(ref content) = self.content {
-            buffer.data.borrow_mut().insert(content, &self.range.start());
+            buffer
+                .data
+                .borrow_mut()
+                .insert(content, &self.range.start());
 
             // Run the change callback, if present.
             if let Some(ref callback) = buffer.change_callback {
@@ -49,7 +52,10 @@ impl Operation for Delete {
 impl Delete {
     /// Creates a new empty delete operation.
     pub fn new(range: Range) -> Delete {
-        Delete{ content: None, range }
+        Delete {
+            content: None,
+            range,
+        }
     }
 }
 
@@ -71,7 +77,10 @@ impl Buffer {
     pub fn delete(&mut self) {
         // We need to specify a range to delete, so start at
         // the current offset and delete the character to the right.
-        let mut end = Position{ line: self.cursor.line, offset: self.cursor.offset + 1 };
+        let mut end = Position {
+            line: self.cursor.line,
+            offset: self.cursor.offset + 1,
+        };
 
         // If there isn't a character to the right,
         // delete the newline by jumping to the start
@@ -127,11 +136,11 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
+    use super::Delete;
+    use crate::buffer::operation::Operation;
+    use crate::buffer::{Buffer, Position, Range};
     use std::cell::RefCell;
     use std::rc::Rc;
-    use super::Delete;
-    use crate::buffer::{Buffer, Position, Range};
-    use crate::buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_remove_and_add_content_without_newlines_at_cursor_position() {
@@ -140,8 +149,11 @@ mod tests {
         buffer.insert("something else");
 
         // Set up a range that covers everything after the first word.
-        let start = Position{ line: 0, offset: 9 };
-        let end = Position{ line: 0, offset: 14 };
+        let start = Position { line: 0, offset: 9 };
+        let end = Position {
+            line: 0,
+            offset: 14,
+        };
         let delete_range = Range::new(start, end);
 
         // Create the delete operation and run it.
@@ -162,8 +174,11 @@ mod tests {
         buffer.insert("\n something\n else\n entirely");
 
         // Set up a range that covers everything after the first word.
-        let start = Position{ line: 1, offset: 10 };
-        let end = Position{ line: 3, offset: 9 };
+        let start = Position {
+            line: 1,
+            offset: 10,
+        };
+        let end = Position { line: 3, offset: 9 };
         let delete_range = Range::new(start, end);
 
         // Create the delete operation and run it.
@@ -187,8 +202,11 @@ mod tests {
         buffer.insert("something else");
 
         // Set up a range that covers everything after the first word.
-        let start = Position{ line: 0, offset: 9 };
-        let end = Position{ line: 0, offset: 14 };
+        let start = Position { line: 0, offset: 9 };
+        let end = Position {
+            line: 0,
+            offset: 14,
+        };
         let delete_range = Range::new(start, end);
 
         // Create a position that we'll share with the callback.
@@ -205,7 +223,7 @@ mod tests {
         delete_operation.run(&mut buffer);
 
         // Verify that the callback received the correct position.
-        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+        assert_eq!(*tracked_position.borrow(), Position { line: 0, offset: 9 });
     }
 
     #[test]
@@ -215,8 +233,11 @@ mod tests {
         buffer.insert("something else");
 
         // Set up a range that covers everything after the first word.
-        let start = Position{ line: 0, offset: 9 };
-        let end = Position{ line: 0, offset: 14 };
+        let start = Position { line: 0, offset: 9 };
+        let end = Position {
+            line: 0,
+            offset: 14,
+        };
         let delete_range = Range::new(start, end);
 
         // Create the delete operation and run it.
@@ -236,6 +257,6 @@ mod tests {
         delete_operation.reverse(&mut buffer);
 
         // Verify that the callback received the correct position.
-        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+        assert_eq!(*tracked_position.borrow(), Position { line: 0, offset: 9 });
     }
 }

@@ -4,7 +4,7 @@ use crate::buffer::{Position, Range};
 #[derive(PartialEq, Debug)]
 pub struct LineRange {
     start: usize,
-    end:   usize,
+    end: usize,
 }
 
 impl LineRange {
@@ -12,9 +12,12 @@ impl LineRange {
     /// arguments in the event that the end precedes the start.
     pub fn new(start: usize, end: usize) -> LineRange {
         if start < end {
-            LineRange{ start, end }
+            LineRange { start, end }
         } else {
-            LineRange{ start: end, end: start }
+            LineRange {
+                start: end,
+                end: start,
+            }
         }
     }
 
@@ -44,8 +47,14 @@ impl LineRange {
     /// ```
     pub fn to_range(&self) -> Range {
         Range::new(
-            Position{ line: self.start, offset: 0 },
-            Position{ line: self.end, offset:0 }
+            Position {
+                line: self.start,
+                offset: 0,
+            },
+            Position {
+                line: self.end,
+                offset: 0,
+            },
         )
     }
 
@@ -68,8 +77,14 @@ impl LineRange {
     /// ```
     pub fn to_inclusive_range(&self) -> Range {
         Range::new(
-            Position{ line: self.start, offset: 0 },
-            Position{ line: self.end+1, offset:0 }
+            Position {
+                line: self.start,
+                offset: 0,
+            },
+            Position {
+                line: self.end + 1,
+                offset: 0,
+            },
         )
     }
 

@@ -31,13 +31,13 @@ impl Workspace {
             syntax_set = builder.build();
         }
 
-        Ok(Workspace{
+        Ok(Workspace {
             path: path.canonicalize()?,
             buffers: Vec::new(),
             next_buffer_id: 0,
             current_buffer: None,
             current_buffer_index: None,
-            syntax_set
+            syntax_set,
         })
     }
 
@@ -71,7 +71,7 @@ impl Workspace {
         self.next_buffer_id += 1;
 
         // The target index is directly after the current buffer's index.
-        let target_index = self.current_buffer_index.map(|i| i + 1 ).unwrap_or(0);
+        let target_index = self.current_buffer_index.map(|i| i + 1).unwrap_or(0);
 
         // Insert the buffer and select it.
         self.buffers.insert(target_index, buf);
@@ -146,12 +146,11 @@ impl Workspace {
     /// assert_eq!(workspace.current_buffer_path(), Some(Path::new("file")));
     /// ```
     pub fn current_buffer_path(&self) -> Option<&Path> {
-        self.current_buffer.as_ref()
-          .and_then(|buf| buf.path.as_ref()
-              .and_then(|path| path.strip_prefix(&self.path).ok()
-                  .or_else(|| Some(path))
-              )
-          )
+        self.current_buffer.as_ref().and_then(|buf| {
+            buf.path
+                .as_ref()
+                .and_then(|path| path.strip_prefix(&self.path).ok().or_else(|| Some(path)))
+        })
     }
 
     /// Removes the currently selected buffer from the collection.
@@ -220,9 +219,9 @@ impl Workspace {
     pub fn previous_buffer(&mut self) {
         if let Some(index) = self.current_buffer_index {
             if index > 0 {
-                self.select_buffer(index-1);
+                self.select_buffer(index - 1);
             } else {
-                self.select_buffer(self.buffers.len()-1);
+                self.select_buffer(self.buffers.len() - 1);
             }
         }
     }
@@ -254,10 +253,10 @@ impl Workspace {
     /// ```
     pub fn next_buffer(&mut self) {
         if let Some(index) = self.current_buffer_index {
-            if index == self.buffers.len()-1 {
+            if index == self.buffers.len() - 1 {
                 self.select_buffer(0);
             } else {
-                self.select_buffer(index+1);
+                self.select_buffer(index + 1);
             }
         }
     }
@@ -295,11 +294,15 @@ impl Workspace {
     /// );
     /// ```
     pub fn current_buffer_tokens(&self) -> Result<TokenSet<'_>> {
-        let buf = self.current_buffer.as_ref().ok_or(ErrorKind::EmptyWorkspace)?;
+        let buf = self
+            .current_buffer
+            .as_ref()
+            .ok_or(ErrorKind::EmptyWorkspace)?;
         let data = buf.data();
-        let syntax_definition = buf.syntax_definition.as_ref().ok_or(
-            ErrorKind::MissingSyntax
-        )?;
+        let syntax_definition = buf
+            .syntax_definition
+            .as_ref()
+            .ok_or(ErrorKind::MissingSyntax)?;
 
         Ok(TokenSet::new(data, syntax_definition, &self.syntax_set))
     }
@@ -347,12 +350,15 @@ impl Workspace {
     ///
     /// ```
     pub fn update_current_syntax(&mut self) -> Result<()> {
-        let buffer = self.current_buffer.as_mut().ok_or(ErrorKind::EmptyWorkspace)?;
-        let definition = buffer.file_extension().and_then(|ex| {
-            self.syntax_set.find_syntax_by_extension(&ex)
-        }).or_else(|| {
-            Some(self.syntax_set.find_syntax_plain_text())
-        }).cloned();
+        let buffer = self
+            .current_buffer
+            .as_mut()
+            .ok_or(ErrorKind::EmptyWorkspace)?;
+        let definition = buffer
+            .file_extension()
+            .and_then(|ex| self.syntax_set.find_syntax_by_extension(&ex))
+            .or_else(|| Some(self.syntax_set.find_syntax_plain_text()))
+            .cloned();
         buffer.syntax_definition = definition;
 
         Ok(())
@@ -361,7 +367,10 @@ impl Workspace {
     fn select_buffer(&mut self, index: usize) -> bool {
         // Check-in current buffer, if it exists.
         if let Some(current_buffer) = self.current_buffer.as_mut() {
-            mem::swap(current_buffer, &mut self.buffers[self.current_buffer_index.unwrap()]);
+            mem::swap(
+                current_buffer,
+                &mut self.buffers[self.current_buffer_index.unwrap()],
+            );
         }
 
         // Check-out buffer at provided index.
@@ -384,13 +393,16 @@ impl Workspace {
             }
 
             // Look at other open buffers to see if one matches.
-            let index = self.buffers.iter().position(|buffer| {
-                buffer.path.as_ref() == Some(canonical_path)
-            });
+            let index = self
+                .buffers
+                .iter()
+                .position(|buffer| buffer.path.as_ref() == Some(canonical_path));
 
             // If we found a matching buffer, select it and propagate the
             // result of that operation. Otherwise, return false.
-            index.map(|index| self.select_buffer(index)).unwrap_or(false)
+            index
+                .map(|index| self.select_buffer(index))
+                .unwrap_or(false)
         } else {
             false
         }
@@ -401,8 +413,8 @@ impl Workspace {
 mod tests {
     use super::Workspace;
     use crate::buffer::Buffer;
-    use std::path::Path;
     use std::env;
+    use std::path::Path;
 
     #[test]
     fn add_buffer_adds_and_selects_the_passed_buffer() {
@@ -461,11 +473,15 @@ mod tests {
         workspace.add_buffer(buf);
 
         let name = workspace
-          .current_buffer
-          .as_ref()
-          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+            .current_buffer
+            .as_ref()
+            .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
 
-        assert!(workspace.current_buffer.unwrap().syntax_definition.is_some());
+        assert!(workspace
+            .current_buffer
+            .unwrap()
+            .syntax_definition
+            .is_some());
         assert_eq!(name, Some("Plain Text".to_string()));
     }
 
@@ -476,18 +492,24 @@ mod tests {
         workspace.add_buffer(buf.unwrap());
 
         let name = workspace
-          .current_buffer
-          .as_ref()
-          .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
+            .current_buffer
+            .as_ref()
+            .and_then(|ref b| b.syntax_definition.as_ref().map(|sd| sd.name.clone()));
 
-        assert!(workspace.current_buffer.unwrap().syntax_definition.is_some());
+        assert!(workspace
+            .current_buffer
+            .unwrap()
+            .syntax_definition
+            .is_some());
         assert_eq!(name, Some("Plain Text".to_string()));
     }
 
     #[test]
     fn open_buffer_adds_and_selects_the_buffer_at_the_specified_path() {
         let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
+        workspace
+            .open_buffer(Path::new("tests/sample/file"))
+            .unwrap();
 
         assert_eq!(workspace.buffers.len(), 1);
         assert_eq!(workspace.current_buffer.unwrap().data(), "it works!\n");
@@ -496,8 +518,12 @@ mod tests {
     #[test]
     fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
         let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
+        workspace
+            .open_buffer(Path::new("tests/sample/file"))
+            .unwrap();
+        workspace
+            .open_buffer(Path::new("tests/sample/file"))
+            .unwrap();
 
         assert_eq!(workspace.buffers.len(), 1);
     }
@@ -505,7 +531,9 @@ mod tests {
     #[test]
     fn open_buffer_selects_buffer_if_it_already_exists_in_workspace() {
         let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
-        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
+        workspace
+            .open_buffer(Path::new("tests/sample/file"))
+            .unwrap();
 
         // Add and select another buffer.
         let mut buf = Buffer::new();
@@ -514,12 +542,17 @@ mod tests {
         assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "scribe");
 
         // Try to add the first buffer again.
-        workspace.open_buffer(Path::new("tests/sample/file")).unwrap();
+        workspace
+            .open_buffer(Path::new("tests/sample/file"))
+            .unwrap();
 
         // Ensure there are only two buffers, and that the
         // one requested via open_buffer is now selected.
         assert_eq!(workspace.buffers.len(), 2);
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "it works!\n");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "it works!\n"
+        );
     }
 
     #[test]
@@ -543,7 +576,10 @@ mod tests {
         let absolute_path = env::current_dir().unwrap();
         buf.path = Some(absolute_path.clone());
         workspace.add_buffer(buf);
-        assert_eq!(workspace.current_buffer_path(), Some(absolute_path.as_path()));
+        assert_eq!(
+            workspace.current_buffer_path(),
+            Some(absolute_path.as_path())
+        );
     }
 
     #[test]
@@ -631,19 +667,31 @@ mod tests {
         workspace.add_buffer(third_buffer);
 
         // Ensure that the third buffer is currently selected.
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "third buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "third buffer"
+        );
 
         // Ensure that the second buffer is returned.
         workspace.previous_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "second buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "second buffer"
+        );
 
         // Ensure that the first buffer is returned.
         workspace.previous_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "first buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "first buffer"
+        );
 
         // Ensure that it wraps back to the third buffer.
         workspace.previous_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "third buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "third buffer"
+        );
     }
 
     #[test]
@@ -669,18 +717,30 @@ mod tests {
         workspace.add_buffer(third_buffer);
 
         // Ensure that the third buffer is currently selected.
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "third buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "third buffer"
+        );
 
         // Ensure that it wraps back to the first buffer.
         workspace.next_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "first buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "first buffer"
+        );
 
         // Ensure that the second buffer is returned.
         workspace.next_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "second buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "second buffer"
+        );
 
         // Ensure that the third buffer is returned.
         workspace.next_buffer();
-        assert_eq!(workspace.current_buffer.as_ref().unwrap().data(), "third buffer");
+        assert_eq!(
+            workspace.current_buffer.as_ref().unwrap().data(),
+            "third buffer"
+        );
     }
 }

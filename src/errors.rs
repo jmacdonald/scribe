@@ -1,5 +1,3 @@
-
-
 error_chain! {
     errors {
         EmptyWorkspace {

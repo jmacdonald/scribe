@@ -1,10 +1,10 @@
-use crate::buffer::Buffer;
 pub use self::group::OperationGroup;
+use crate::buffer::Buffer;
 
+mod delete;
 pub mod group;
 pub mod history;
 mod insert;
-mod delete;
 
 /// A reversible buffer operation.
 ///

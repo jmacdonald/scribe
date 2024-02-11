@@ -4,7 +4,7 @@ use crate::buffer::Position;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range {
     start: Position,
-    end:   Position,
+    end: Position,
 }
 
 impl Range {
@@ -13,9 +13,12 @@ impl Range {
     pub fn new(start: Position, end: Position) -> Range {
         // Ensure that the end does not precede the start.
         if start > end {
-            Range{ start: end, end: start }
+            Range {
+                start: end,
+                end: start,
+            }
         } else {
-            Range{ start, end }
+            Range { start, end }
         }
     }
 
@@ -60,8 +63,8 @@ impl Range {
 
 #[cfg(test)]
 mod tests {
-    use crate::buffer::Position;
     use super::Range;
+    use crate::buffer::Position;
 
     #[test]
     fn new_does_not_swap_values_if_end_does_not_precede_start() {

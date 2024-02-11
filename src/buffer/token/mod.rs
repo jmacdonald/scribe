@@ -10,7 +10,7 @@ use syntect::parsing::ScopeStack;
 #[derive(Debug, PartialEq)]
 pub enum Token<'a> {
     Newline,
-    Lexeme(Lexeme<'a>)
+    Lexeme(Lexeme<'a>),
 }
 
 #[derive(Debug, PartialEq)]

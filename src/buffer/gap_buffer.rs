@@ -35,7 +35,11 @@ impl GapBuffer {
             bytes.set_len(capacity);
         }
 
-        GapBuffer{ data: bytes, gap_start, gap_length }
+        GapBuffer {
+            data: bytes,
+            gap_start,
+            gap_length,
+        }
     }
 
     /// Inserts the specified data into the buffer at the specified position.
@@ -112,7 +116,7 @@ impl GapBuffer {
             // The gap is in the middle of the range being requested.
             // Stitch the surrounding halves together to exclude it.
             let first_half = &self.data[start_offset..self.gap_start];
-            let second_half = &self.data[self.gap_start+self.gap_length..end_offset];
+            let second_half = &self.data[self.gap_start + self.gap_length..end_offset];
 
             // Allocate a string for the first half.
             let mut data = String::from_utf8_lossy(first_half).into_owned();
@@ -156,18 +160,21 @@ impl GapBuffer {
             Some(offset) => {
                 // Widen the gap to cover the deleted contents.
                 self.gap_length = offset - self.gap_start;
-            },
+            }
             None => {
                 // The end of the range doesn't exist; check
                 // if it's on the last line in the file.
-                let start_of_next_line = Position{ line: range.end().line + 1, offset: 0 };
+                let start_of_next_line = Position {
+                    line: range.end().line + 1,
+                    offset: 0,
+                };
 
                 match self.find_offset(&start_of_next_line) {
                     Some(offset) => {
                         // There are other lines below this range.
                         // Just remove up until the end of the line.
                         self.gap_length = offset - self.gap_start;
-                    },
+                    }
                     None => {
                         // We're on the last line, just get rid of the rest
                         // by extending the gap right to the end of the buffer.
@@ -210,21 +217,21 @@ impl GapBuffer {
 
             // Advance the line and offset characters.
             if grapheme == "\n" {
-                line+=1;
+                line += 1;
                 line_offset = 0;
             } else {
-                line_offset+=1;
+                line_offset += 1;
             }
         }
 
         // We didn't find the position *within* the first half, but it could
         // be right after it, which means it's right at the start of the gap.
         if line == position.line && line_offset == position.offset {
-            return Some(self.gap_start+self.gap_length);
+            return Some(self.gap_start + self.gap_length);
         }
 
         // We haven't reached the position yet, so we'll move on to the other half.
-        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]);
+        let second_half = String::from_utf8_lossy(&self.data[self.gap_start + self.gap_length..]);
         for (offset, grapheme) in (*second_half).grapheme_indices(true) {
             // Check to see if we've found the position yet.
             if line == position.line && line_offset == position.offset {
@@ -233,10 +240,10 @@ impl GapBuffer {
 
             // Advance the line and offset characters.
             if grapheme == "\n" {
-                line+=1;
+                line += 1;
                 line_offset = 0;
             } else {
-                line_offset+=1;
+                line_offset += 1;
             }
         }
 
@@ -265,18 +272,18 @@ impl GapBuffer {
                 }
 
                 self.gap_start = offset;
-            },
+            }
             Ordering::Greater => {
                 // Shift the gap to the right one byte at a time.
                 for index in self.gap_start + self.gap_length..offset {
-                    self.data[index-self.gap_length] = self.data[index];
+                    self.data[index - self.gap_length] = self.data[index];
                     self.data[index] = 0;
                 }
 
                 // Because the offset was after the gap, its value included the
                 // gap length. We must remove it to determine the starting point.
                 self.gap_start = offset - self.gap_length;
-            },
+            }
             Ordering::Equal => (), // already at requested offset; NOP
         }
     }
@@ -284,8 +291,8 @@ impl GapBuffer {
     fn write_to_gap(&mut self, data: &str) {
         for byte in data.bytes() {
             self.data[self.gap_start] = byte;
-            self.gap_start+=1;
-            self.gap_length-=1;
+            self.gap_start += 1;
+            self.gap_length -= 1;
         }
     }
 }
@@ -293,7 +300,7 @@ impl GapBuffer {
 impl fmt::Display for GapBuffer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let first_half = String::from_utf8_lossy(&self.data[..self.gap_start]);
-        let second_half = String::from_utf8_lossy(&self.data[self.gap_start+self.gap_length..]);
+        let second_half = String::from_utf8_lossy(&self.data[self.gap_start + self.gap_length..]);
 
         write!(f, "{}{}", first_half, second_half)
     }
@@ -340,7 +347,13 @@ mod tests {
     #[test]
     fn inserting_at_the_end_works() {
         let mut gb = GapBuffer::new("This is a test.".to_string());
-        gb.insert(" Seriously.", &Position { line: 0, offset: 15 });
+        gb.insert(
+            " Seriously.",
+            &Position {
+                line: 0,
+                offset: 15,
+            },
+        );
         assert_eq!(gb.to_string(), "This is a test. Seriously.");
     }
 
@@ -348,29 +361,41 @@ mod tests {
     fn inserting_in_different_spots_twice_works() {
         let mut gb = GapBuffer::new("This is a test.".to_string());
         gb.insert("Hi. ", &Position { line: 0, offset: 0 });
-        gb.insert(" Thank you.", &Position { line: 0, offset: 19 });
+        gb.insert(
+            " Thank you.",
+            &Position {
+                line: 0,
+                offset: 19,
+            },
+        );
         assert_eq!(gb.to_string(), "Hi. This is a test. Thank you.");
     }
 
     #[test]
     fn inserting_at_an_invalid_position_does_nothing() {
         let mut gb = GapBuffer::new("This is a test.".to_string());
-        gb.insert(" Seriously.", &Position { line: 0, offset: 35 });
+        gb.insert(
+            " Seriously.",
+            &Position {
+                line: 0,
+                offset: 35,
+            },
+        );
         assert_eq!(gb.to_string(), "This is a test.");
     }
 
     #[test]
     fn inserting_after_a_grapheme_cluster_works() {
         let mut gb = GapBuffer::new("scribe नी".to_string());
-        gb.insert(" library", &Position{ line : 0, offset: 8 });
+        gb.insert(" library", &Position { line: 0, offset: 8 });
         assert_eq!(gb.to_string(), "scribe नी library");
     }
 
     #[test]
     fn deleting_works() {
         let mut gb = GapBuffer::new("This is a test.\nSee what happens.".to_string());
-        let start = Position{ line: 0, offset: 8 };
-        let end = Position{ line: 1, offset: 4 };
+        let start = Position { line: 0, offset: 8 };
+        let end = Position { line: 1, offset: 4 };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is what happens.");
     }
@@ -378,9 +403,9 @@ mod tests {
     #[test]
     fn inserting_then_deleting_at_the_start_works() {
         let mut gb = GapBuffer::new(String::new());
-        gb.insert("This is a test.", &Position{ line: 0, offset: 0});
-        let start = Position{ line: 0, offset: 0 };
-        let end = Position{ line: 0, offset: 1 };
+        gb.insert("This is a test.", &Position { line: 0, offset: 0 });
+        let start = Position { line: 0, offset: 0 };
+        let end = Position { line: 0, offset: 1 };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "his is a test.");
     }
@@ -388,14 +413,17 @@ mod tests {
     #[test]
     fn deleting_immediately_after_the_end_of_the_gap_widens_the_gap() {
         let mut gb = GapBuffer::new("This is a test.".to_string());
-        let mut start = Position{ line: 0, offset: 8 };
-        let mut end = Position{ line: 0, offset: 9 };
+        let mut start = Position { line: 0, offset: 8 };
+        let mut end = Position { line: 0, offset: 9 };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is  test.");
         assert_eq!(gb.gap_length, 1);
 
-        start = Position{ line: 0, offset: 9 };
-        end = Position{ line: 0, offset: 10 };
+        start = Position { line: 0, offset: 9 };
+        end = Position {
+            line: 0,
+            offset: 10,
+        };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "This is  est.");
         assert_eq!(gb.gap_length, 2);
@@ -404,8 +432,11 @@ mod tests {
     #[test]
     fn deleting_to_an_out_of_range_line_deletes_to_the_end_of_the_buffer() {
         let mut gb = GapBuffer::new("scribe\nlibrary".to_string());
-        let start = Position{ line: 0, offset: 6 };
-        let end = Position{ line: 2, offset: 10 };
+        let start = Position { line: 0, offset: 6 };
+        let end = Position {
+            line: 2,
+            offset: 10,
+        };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "scribe");
     }
@@ -413,8 +444,11 @@ mod tests {
     #[test]
     fn deleting_to_an_out_of_range_column_deletes_to_the_end_of_the_buffer() {
         let mut gb = GapBuffer::new("scribe\nlibrary".to_string());
-        let start = Position{ line: 0, offset: 0 };
-        let end = Position{ line: 0, offset: 100 };
+        let start = Position { line: 0, offset: 0 };
+        let end = Position {
+            line: 0,
+            offset: 100,
+        };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "library");
     }
@@ -422,8 +456,11 @@ mod tests {
     #[test]
     fn deleting_after_a_grapheme_cluster_works() {
         let mut gb = GapBuffer::new("scribe नी library".to_string());
-        let start = Position{ line: 0, offset: 8 };
-        let end = Position{ line: 0, offset: 16 };
+        let start = Position { line: 0, offset: 8 };
+        let end = Position {
+            line: 0,
+            offset: 16,
+        };
         gb.delete(&Range::new(start, end));
         assert_eq!(gb.to_string(), "scribe नी");
     }
@@ -433,8 +470,8 @@ mod tests {
         // Create a buffer and a range that captures the first character.
         let mut gb = GapBuffer::new("scribe".to_string());
         let range = Range::new(
-            Position{ line: 0, offset: 0 },
-            Position{ line: 0, offset: 1 }
+            Position { line: 0, offset: 0 },
+            Position { line: 0, offset: 1 },
         );
 
         // Delete the first character, which will move the gap buffer to the start.
@@ -452,15 +489,15 @@ mod tests {
 
         // Delete data from the middle of the buffer, which will move the gap there.
         gb.delete(&Range::new(
-            Position{ line: 0, offset: 2 },
-            Position{ line: 0, offset: 4 }
+            Position { line: 0, offset: 2 },
+            Position { line: 0, offset: 4 },
         ));
         assert_eq!(gb.to_string(), "scbe");
 
         // Request a range that extends from the start to the finish.
         let range = Range::new(
-            Position{ line: 0, offset: 0 },
-            Position{ line: 0, offset: 4 }
+            Position { line: 0, offset: 0 },
+            Position { line: 0, offset: 4 },
         );
         assert_eq!(gb.read(&range).unwrap(), "scbe");
     }
@@ -469,8 +506,11 @@ mod tests {
     fn reading_after_a_grapheme_cluster_works() {
         let gb = GapBuffer::new("scribe नी library".to_string());
         let range = Range::new(
-            Position{ line: 0, offset: 8 },
-            Position{ line: 0, offset: 16 }
+            Position { line: 0, offset: 8 },
+            Position {
+                line: 0,
+                offset: 16,
+            },
         );
         assert_eq!(gb.read(&range).unwrap(), " library");
     }
@@ -478,8 +518,14 @@ mod tests {
     #[test]
     fn in_bounds_considers_grapheme_clusters() {
         let gb = GapBuffer::new("scribe नी library".to_string());
-        let in_bounds = Position{ line: 0, offset: 16 };
-        let out_of_bounds = Position{ line: 0, offset: 17 };
+        let in_bounds = Position {
+            line: 0,
+            offset: 16,
+        };
+        let out_of_bounds = Position {
+            line: 0,
+            offset: 17,
+        };
         assert!(gb.in_bounds(&in_bounds));
         assert!(!gb.in_bounds(&out_of_bounds));
     }

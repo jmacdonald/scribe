@@ -20,7 +20,10 @@ pub struct Insert {
 
 impl Operation for Insert {
     fn run(&mut self, buffer: &mut Buffer) {
-        buffer.data.borrow_mut().insert(&self.content, &self.position);
+        buffer
+            .data
+            .borrow_mut()
+            .insert(&self.content, &self.position);
 
         // Run the change callback, if present.
         if let Some(ref callback) = buffer.change_callback {
@@ -52,14 +55,11 @@ impl Operation for Insert {
 
         // Now that we have the required info,
         // build the end position and total range.
-        let end_position = Position{
+        let end_position = Position {
             line: end_line,
             offset: end_offset,
         };
-        let range = Range::new(
-            self.position,
-            end_position
-        );
+        let range = Range::new(self.position, end_position);
 
         // Remove the content we'd previously inserted.
         buffer.data.borrow_mut().delete(&range);
@@ -78,7 +78,7 @@ impl Operation for Insert {
 impl Insert {
     /// Creates a new empty insert operation.
     pub fn new(content: String, position: Position) -> Insert {
-        Insert{ content, position }
+        Insert { content, position }
     }
 }
 
@@ -110,12 +110,12 @@ impl Buffer {
 
 #[cfg(test)]
 mod tests {
+    use super::Insert;
+    use crate::buffer::operation::Operation;
+    use crate::buffer::position::Position;
+    use crate::buffer::Buffer;
     use std::cell::RefCell;
     use std::rc::Rc;
-    use super::Insert;
-    use crate::buffer::Buffer;
-    use crate::buffer::position::Position;
-    use crate::buffer::operation::Operation;
 
     #[test]
     fn run_and_reverse_add_and_remove_content_without_newlines_at_cursor_position() {
@@ -124,7 +124,7 @@ mod tests {
         buffer.insert("something");
 
         // Set up a position pointing to the end of the buffer's contents.
-        let insert_position = Position{ line: 0, offset: 9 };
+        let insert_position = Position { line: 0, offset: 9 };
 
         // Create the insert operation and run it.
         let mut insert_operation = Insert::new(" else".to_string(), insert_position);
@@ -144,7 +144,10 @@ mod tests {
         buffer.insert("\n something");
 
         // Set up a position pointing to the end of the buffer's contents.
-        let insert_position = Position{ line: 1, offset: 10 };
+        let insert_position = Position {
+            line: 1,
+            offset: 10,
+        };
 
         // Create the insert operation and run it.
         //
@@ -164,7 +167,7 @@ mod tests {
     fn reverse_removes_a_newline() {
         // Set up a buffer with some data.
         let mut buffer = Buffer::new();
-        let mut insert_operation = Insert::new("\n".to_string(), Position{ line: 0, offset: 0 });
+        let mut insert_operation = Insert::new("\n".to_string(), Position { line: 0, offset: 0 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "\n");
 
@@ -178,7 +181,8 @@ mod tests {
         let mut buffer = Buffer::new();
         buffer.insert("scribe\nlibrary\n");
 
-        let mut insert_operation = Insert::new("editor\n".to_string(), Position{ line: 1, offset: 0 });
+        let mut insert_operation =
+            Insert::new("editor\n".to_string(), Position { line: 1, offset: 0 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "scribe\neditor\nlibrary\n");
 
@@ -192,7 +196,8 @@ mod tests {
         let mut buffer = Buffer::new();
         buffer.insert("scribe\nlibrary");
 
-        let mut insert_operation = Insert::new("नी editor ".to_string(), Position{ line: 1, offset: 0 });
+        let mut insert_operation =
+            Insert::new("नी editor ".to_string(), Position { line: 1, offset: 0 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "scribe\nनी editor library");
 
@@ -206,7 +211,8 @@ mod tests {
         let mut buffer = Buffer::new();
         buffer.insert("scribe\nlibrary");
 
-        let mut insert_operation = Insert::new("\nनी editor".to_string(), Position{ line: 0, offset: 6 });
+        let mut insert_operation =
+            Insert::new("\nनी editor".to_string(), Position { line: 0, offset: 6 });
         insert_operation.run(&mut buffer);
         assert_eq!(buffer.data(), "scribe\nनी editor\nlibrary");
 
@@ -221,7 +227,7 @@ mod tests {
         buffer.insert("something");
 
         // Set up a position pointing to the end of the buffer's contents.
-        let insert_position = Position{ line: 0, offset: 9 };
+        let insert_position = Position { line: 0, offset: 9 };
 
         // Create a position that we'll share with the callback.
         let tracked_position = Rc::new(RefCell::new(Position::new()));
@@ -237,7 +243,7 @@ mod tests {
         insert_operation.run(&mut buffer);
 
         // Verify that the callback received the correct position.
-        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+        assert_eq!(*tracked_position.borrow(), Position { line: 0, offset: 9 });
     }
 
     #[test]
@@ -247,7 +253,7 @@ mod tests {
         buffer.insert("something");
 
         // Set up a position pointing to the end of the buffer's contents.
-        let insert_position = Position{ line: 0, offset: 9 };
+        let insert_position = Position { line: 0, offset: 9 };
 
         // Create the insert operation and run it.
         let mut insert_operation = Insert::new(" else".to_string(), insert_position);
@@ -266,6 +272,6 @@ mod tests {
         insert_operation.reverse(&mut buffer);
 
         // Verify that the callback received the correct position.
-        assert_eq!(*tracked_position.borrow(), Position{ line: 0, offset: 9});
+        assert_eq!(*tracked_position.borrow(), Position { line: 0, offset: 9 });
     }
 }

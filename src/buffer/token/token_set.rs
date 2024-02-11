@@ -5,15 +5,15 @@ use syntect::parsing::{SyntaxReference, SyntaxSet};
 pub struct TokenSet<'a> {
     data: String,
     syntax_definition: &'a SyntaxReference,
-    syntaxes: &'a SyntaxSet
+    syntaxes: &'a SyntaxSet,
 }
 
 impl<'a> TokenSet<'a> {
     pub fn new(data: String, def: &'a SyntaxReference, syntaxes: &'a SyntaxSet) -> TokenSet<'a> {
-        TokenSet{
+        TokenSet {
             data,
             syntax_definition: def,
-            syntaxes
+            syntaxes,
         }
     }
 

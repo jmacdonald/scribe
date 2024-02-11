@@ -8,16 +8,16 @@ use crate::buffer::operation::Operation;
 pub struct History {
     previous: Vec<Box<dyn Operation>>,
     next: Vec<Box<dyn Operation>>,
-    marked_position: Option<usize>
+    marked_position: Option<usize>,
 }
 
 impl History {
     /// Creates a new empty operation history.
     pub fn new() -> History {
-        History{
+        History {
             previous: Vec::new(),
             next: Vec::new(),
-            marked_position: None
+            marked_position: None,
         }
     }
 
@@ -42,8 +42,8 @@ impl History {
                 // clone of it so that it can be re-applied as a redo operation.
                 self.next.push(operation.clone_operation());
                 Some(operation)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 
@@ -55,8 +55,8 @@ impl History {
                 // clone of it so that it can be re-applied as an undo operation, again.
                 self.previous.push(operation.clone_operation());
                 Some(operation)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 
@@ -76,9 +76,9 @@ impl History {
 #[cfg(test)]
 mod tests {
     use super::History;
-    use crate::buffer::{Buffer, Position};
-    use crate::buffer::operation::Operation;
     use crate::buffer::operation::insert::Insert;
+    use crate::buffer::operation::Operation;
+    use crate::buffer::{Buffer, Position};
 
     #[test]
     fn previous_and_next_return_the_correct_operations() {
@@ -88,7 +88,7 @@ mod tests {
         let mut buffer = Buffer::new();
 
         // Run an insert operation and add it to the history.
-        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_position = Position { line: 0, offset: 0 };
         let mut insert_operation = Insert::new("scribe".to_string(), insert_position);
         insert_operation.run(&mut buffer);
         history.add(Box::new(insert_operation));
@@ -130,7 +130,7 @@ mod tests {
         let mut history = History::new();
 
         // Add an insert operation to the history.
-        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_position = Position { line: 0, offset: 0 };
         let insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
@@ -160,7 +160,7 @@ mod tests {
         history.mark();
 
         // Add an insert operation to the history.
-        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_position = Position { line: 0, offset: 0 };
         let insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
@@ -173,7 +173,7 @@ mod tests {
         history.mark();
 
         // Add an insert operation to the history.
-        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_position = Position { line: 0, offset: 0 };
         let insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
@@ -188,7 +188,7 @@ mod tests {
         let mut history = History::new();
 
         // Add an insert operation to the history.
-        let insert_position = Position{ line: 0, offset: 0 };
+        let insert_position = Position { line: 0, offset: 0 };
         let insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
@@ -209,7 +209,7 @@ mod tests {
         let mut history = History::new();
 
         // Add an insert operation to the history.
-        let mut insert_position = Position{ line: 0, offset: 0 };
+        let mut insert_position = Position { line: 0, offset: 0 };
         let mut insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 
@@ -220,7 +220,7 @@ mod tests {
         history.previous();
 
         // Add a replacement operation.
-        insert_position = Position{ line: 0, offset: 0 };
+        insert_position = Position { line: 0, offset: 0 };
         insert_operation = Insert::new("scribe".to_string(), insert_position);
         history.add(Box::new(insert_operation));
 

@@ -14,21 +14,25 @@ pub struct TokenIterator<'a> {
     current_position: Position,
     line_events: Vec<(usize, ScopeStackOp)>,
     syntaxes: &'a SyntaxSet,
-    pub error: Option<Error>
+    pub error: Option<Error>,
 }
 
 impl<'a> TokenIterator<'a> {
-    pub fn new(data: &'a str, def: &'a SyntaxReference, syntaxes: &'a SyntaxSet) -> Result<TokenIterator<'a>> {
-        let mut token_iterator = TokenIterator{
+    pub fn new(
+        data: &'a str,
+        def: &'a SyntaxReference,
+        syntaxes: &'a SyntaxSet,
+    ) -> Result<TokenIterator<'a>> {
+        let mut token_iterator = TokenIterator {
             scopes: ScopeStack::new(),
             parser: ParseState::new(def),
             lines: LineIterator::new(data),
             current_line: None,
             current_byte_offset: 0,
-            current_position: Position{ line: 0, offset: 0 },
+            current_position: Position { line: 0, offset: 0 },
             line_events: Vec::new(),
             syntaxes,
-            error: None
+            error: None,
         };
 
         // Preload the first line
@@ -88,18 +92,15 @@ impl<'a> TokenIterator<'a> {
                     // Don't include trailing newlines in lexemes.
                     let end_of_token = cmp::min(event_offset, end_of_line);
 
-                    lexeme = Some(
-                        Token::Lexeme(Lexeme{
-                            value: &line[self.current_byte_offset..end_of_token],
-                            scope: self.scopes.clone(),
-                            position: self.current_position,
-                        })
-                    );
+                    lexeme = Some(Token::Lexeme(Lexeme {
+                        value: &line[self.current_byte_offset..end_of_token],
+                        scope: self.scopes.clone(),
+                        position: self.current_position,
+                    }));
 
                     // The event/current offsets are byte-based, but
                     // position offsets should be grapheme cluster-based.
-                    self.current_position.offset +=
-                        line[self.current_byte_offset..end_of_token]
+                    self.current_position.offset += line[self.current_byte_offset..end_of_token]
                         .graphemes(true)
                         .count();
 
@@ -110,18 +111,18 @@ impl<'a> TokenIterator<'a> {
                 // that we can pair it with a token later on.
                 self.scopes.apply(&scope_change)?;
 
-                if lexeme.is_some() { return Ok(lexeme) }
+                if lexeme.is_some() {
+                    return Ok(lexeme);
+                }
             }
 
             // Categorize the rest of the line with the last known scope.
             if self.current_byte_offset < end_of_line {
-                lexeme = Some(
-                    Token::Lexeme(Lexeme{
-                        value: &line[self.current_byte_offset..end_of_line],
-                        scope: self.scopes.clone(),
-                        position: self.current_position,
-                    })
-                );
+                lexeme = Some(Token::Lexeme(Lexeme {
+                    value: &line[self.current_byte_offset..end_of_line],
+                    scope: self.scopes.clone(),
+                    position: self.current_position,
+                }));
             }
         }
 
@@ -143,7 +144,10 @@ impl<'a> TokenIterator<'a> {
             self.current_line = Some(line);
 
             // Track our position, which we'll pass to generated tokens.
-            self.current_position = Position{ line: line_number, offset: 0 };
+            self.current_position = Position {
+                line: line_number,
+                offset: 0,
+            };
 
             // Reset byte-based line offset.
             self.current_byte_offset = 0;
@@ -173,97 +177,108 @@ mod tests {
     fn token_iterator_returns_correct_tokens() {
         let syntax_set = SyntaxSet::load_defaults_newlines();
         let def = syntax_set.find_syntax_by_extension("rs");
-        let iterator = TokenIterator::new("struct Buffer {\n// comment\n  data: String\n}garbage\n\n", def.unwrap(), &syntax_set).unwrap();
+        let iterator = TokenIterator::new(
+            "struct Buffer {\n// comment\n  data: String\n}garbage\n\n",
+            def.unwrap(),
+            &syntax_set,
+        )
+        .unwrap();
         let mut scope_stack = ScopeStack::new();
         let mut expected_tokens = Vec::new();
         scope_stack.push(Scope::new("source.rust").unwrap());
         scope_stack.push(Scope::new("meta.struct.rust").unwrap());
         scope_stack.push(Scope::new("storage.type.struct.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "struct",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 0 }
+            position: Position { line: 0, offset: 0 },
         }));
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: " ",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 6 }
+            position: Position { line: 0, offset: 6 },
         }));
         scope_stack.push(Scope::new("entity.name.struct.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "Buffer",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 7 }
+            position: Position { line: 0, offset: 7 },
         }));
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: " ",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 13 }
+            position: Position {
+                line: 0,
+                offset: 13,
+            },
         }));
         scope_stack.push(Scope::new("meta.block.rust").unwrap());
         scope_stack.push(Scope::new("punctuation.section.block.begin.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "{",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 14 }
+            position: Position {
+                line: 0,
+                offset: 14,
+            },
         }));
         expected_tokens.push(Token::Newline);
         scope_stack.pop();
         scope_stack.push(Scope::new("comment.line.double-slash.rust").unwrap());
         scope_stack.push(Scope::new("punctuation.definition.comment.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "//",
             scope: scope_stack.clone(),
-            position: Position{ line: 1, offset: 0 }
+            position: Position { line: 1, offset: 0 },
         }));
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: " comment",
             scope: scope_stack.clone(),
-            position: Position{ line: 1, offset: 2 }
+            position: Position { line: 1, offset: 2 },
         }));
         expected_tokens.push(Token::Newline);
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "  ",
             scope: scope_stack.clone(),
-            position: Position{ line: 2, offset: 0 }
+            position: Position { line: 2, offset: 0 },
         }));
         scope_stack.push(Scope::new("variable.other.member.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "data",
             scope: scope_stack.clone(),
-            position: Position{ line: 2, offset: 2 }
+            position: Position { line: 2, offset: 2 },
         }));
         scope_stack.pop();
         scope_stack.push(Scope::new("punctuation.separator.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: ":",
             scope: scope_stack.clone(),
-            position: Position{ line: 2, offset: 6 }
+            position: Position { line: 2, offset: 6 },
         }));
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: " String",
             scope: scope_stack.clone(),
-            position: Position{ line: 2, offset: 7 }
+            position: Position { line: 2, offset: 7 },
         }));
         expected_tokens.push(Token::Newline);
         scope_stack.push(Scope::new("punctuation.section.block.end.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "}",
             scope: scope_stack.clone(),
-            position: Position{ line: 3, offset: 0 }
+            position: Position { line: 3, offset: 0 },
         }));
         scope_stack.pop();
         scope_stack.pop();
         scope_stack.pop();
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "garbage",
             scope: scope_stack.clone(),
-            position: Position{ line: 3, offset: 1 }
+            position: Position { line: 3, offset: 1 },
         }));
         expected_tokens.push(Token::Newline);
         expected_tokens.push(Token::Newline);
@@ -284,15 +299,11 @@ mod tests {
         let def = syntax_set.find_syntax_plain_text();
         let iterator = TokenIterator::new("struct", def, &syntax_set).unwrap();
         let mut expected_tokens = Vec::new();
-        expected_tokens.push(
-            Token::Lexeme(Lexeme{
-                value: "struct",
-                scope: ScopeStack::from_vec(vec![
-                    Scope::new("text.plain").unwrap(),
-                ]),
-                position: Position{ line: 0, offset: 0 }
-            })
-        );
+        expected_tokens.push(Token::Lexeme(Lexeme {
+            value: "struct",
+            scope: ScopeStack::from_vec(vec![Scope::new("text.plain").unwrap()]),
+            position: Position { line: 0, offset: 0 },
+        }));
         let actual_tokens: Vec<Token> = iterator.collect();
         for (index, token) in expected_tokens.into_iter().enumerate() {
             assert_eq!(token, actual_tokens[index]);
@@ -309,16 +320,16 @@ mod tests {
         let mut scope_stack = ScopeStack::new();
         let mut expected_tokens = Vec::new();
         scope_stack.push(Scope::new("source.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "€",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 0 }
+            position: Position { line: 0, offset: 0 },
         }));
         scope_stack.push(Scope::new("constant.numeric.integer.decimal.rust").unwrap());
-        expected_tokens.push(Token::Lexeme(Lexeme{
+        expected_tokens.push(Token::Lexeme(Lexeme {
             value: "16",
             scope: scope_stack.clone(),
-            position: Position{ line: 0, offset: 1 }
+            position: Position { line: 0, offset: 1 },
         }));
 
         let actual_tokens: Vec<Token> = iterator.collect();

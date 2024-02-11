@@ -9,10 +9,10 @@ extern crate unicode_segmentation;
 extern crate error_chain;
 
 pub mod buffer;
-pub mod util;
 mod errors;
+pub mod util;
 mod workspace;
 
-pub use crate::errors::*;
 pub use crate::buffer::Buffer;
+pub use crate::errors::*;
 pub use crate::workspace::Workspace;

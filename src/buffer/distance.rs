@@ -23,9 +23,9 @@ impl Distance {
     /// });
     /// ```
     pub fn of_str(from: &str) -> Distance {
-        Distance{
+        Distance {
             lines: from.chars().filter(|&c| c == '\n').count(),
-            offset: from.split('\n').last().map(|l| l.len()).unwrap_or(0)
+            offset: from.split('\n').last().map(|l| l.len()).unwrap_or(0),
         }
     }
 }
@@ -36,17 +36,23 @@ mod tests {
 
     #[test]
     fn of_str_works_with_a_single_line_of_data() {
-        assert_eq!(Distance::of_str("line"), Distance{
-            lines: 0,
-            offset: 4
-        });
+        assert_eq!(
+            Distance::of_str("line"),
+            Distance {
+                lines: 0,
+                offset: 4
+            }
+        );
     }
 
     #[test]
     fn of_str_works_with_a_trailing_newline() {
-        assert_eq!(Distance::of_str("trailing newline\n"), Distance{
-            lines: 1,
-            offset: 0
-        });
+        assert_eq!(
+            Distance::of_str("trailing newline\n"),
+            Distance {
+                lines: 1,
+                offset: 0
+            }
+        );
     }
 }
