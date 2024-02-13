@@ -1,15 +1,13 @@
 //! Types related to in-memory buffers.
 
 // Published API
+pub use self::cursor::Cursor;
 pub use self::distance::Distance;
 pub use self::gap_buffer::GapBuffer;
-
-pub use self::cursor::Cursor;
 pub use self::line_range::LineRange;
 pub use self::position::Position;
 pub use self::range::Range;
 pub use self::token::{Lexeme, Token, TokenSet};
-use crate::errors::*;
 pub use syntect::parsing::{Scope, ScopeStack};
 
 // Child modules
@@ -22,9 +20,9 @@ mod position;
 mod range;
 mod token;
 
-// Buffer type implementation
 use self::operation::history::History;
 use self::operation::{Operation, OperationGroup};
+use crate::errors::*;
 use std::cell::RefCell;
 use std::default::Default;
 use std::fs::{self, File};
