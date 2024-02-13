@@ -1,3 +1,9 @@
+### 0.8.3
+
+* Add new `Buffer::replace_content` method to replace all content in-place
+* Updated `Buffer::reload` to raise an error when path is missing
+* Updated `GapBuffer::new` to accept both `String` and `&str`
+
 ### 0.8.2
 
 * Update Buffer `reload` method to preserve cursor position or line when
