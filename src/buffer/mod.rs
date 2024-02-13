@@ -9,6 +9,7 @@ pub use self::line_range::LineRange;
 pub use self::position::Position;
 pub use self::range::Range;
 pub use self::token::{Lexeme, Token, TokenSet};
+use crate::errors::*;
 pub use syntect::parsing::{Scope, ScopeStack};
 
 // Child modules
@@ -26,10 +27,9 @@ use self::operation::history::History;
 use self::operation::{Operation, OperationGroup};
 use std::cell::RefCell;
 use std::default::Default;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io;
 use std::io::{Read, Write};
-use std::mem;
 use std::ops::Fn;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -414,35 +414,54 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "it works!\n");
     /// assert_eq!(*buffer.cursor, Position{ line: 1, offset: 0 });
     /// ```
-    pub fn reload(&mut self) -> io::Result<()> {
-        if let Some(ref path) = self.path.clone() {
-            match Buffer::from_file(path) {
-                Ok(mut buf) => {
-                    mem::swap(self, &mut buf);
+    pub fn reload(&mut self) -> Result<()> {
+        // Load content from disk.
+        let path = self.path.as_ref().ok_or(ErrorKind::MissingPath)?;
+        let content = fs::read_to_string(path)?;
 
-                    // Restore sticky buffer attributes.
-                    self.id = buf.id;
-                    self.syntax_definition = buf.syntax_definition;
-                    self.change_callback = buf.change_callback;
+        self.replace_content(content);
 
-                    // Try to retain cursor position or line.
-                    if !self.cursor.move_to(*buf.cursor) {
-                        self.cursor.move_to(Position {
-                            line: buf.cursor.line,
-                            offset: 0,
-                        });
-                    }
-                }
-                Err(e) => return Err(e),
-            }
+        Ok(())
+    }
+
+    /// Replaces the buffer's content with the provided data. This method will
+    /// make best efforts to retain the full cursor position, then cursor line,
+    /// and will ultimately fall back to resetting the cursor to its initial
+    /// (0,0) position if these fail. The buffer's ID, syntax definition, and
+    /// change_callback are always persisted.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::buffer::{Buffer, Position};
+    ///
+    /// let mut buffer = Buffer::new();
+    /// buffer.insert("scribe\nlibrary\n");
+    /// buffer.cursor.move_to(Position { line: 1, offset: 1 });
+    /// buffer.replace_content("new\ncontent");
+    ///
+    /// assert_eq!(buffer.data(), "new\ncontent");
+    /// assert_eq!(*buffer.cursor, Position{ line: 1, offset: 1 });
+    /// ```
+    pub fn replace_content<T: AsRef<str>>(&mut self, content: T) {
+        let data = Rc::new(RefCell::new(GapBuffer::new(content)));
+        let mut cursor = Cursor::new(data.clone(), Position { line: 0, offset: 0 });
+
+        // Try to retain cursor position or line.
+        if !cursor.move_to(*self.cursor) {
+            cursor.move_to(Position {
+                line: self.cursor.line,
+                offset: 0,
+            });
         }
+
+        self.data = data;
+        self.cursor = cursor;
 
         // Run the change callback, if present.
         if let Some(ref callback) = self.change_callback {
             callback(Position::new())
         }
-
-        Ok(())
     }
 
     /// Returns the buffer path's file extension.
@@ -574,6 +593,73 @@ mod tests {
 
         // Reload the buffer
         buffer.reload().unwrap();
+
+        // Verify that the callback received the correct position.
+        assert_eq!(*tracked_position.borrow(), Position::new());
+    }
+
+    #[test]
+    fn replace_content_retains_full_position_when_possible() {
+        let mut buffer = Buffer::new();
+        buffer.insert("amp editor");
+
+        // Move to a position that will exist after replacing content.
+        buffer.cursor.move_to(Position { line: 0, offset: 3 });
+
+        // Replace the buffer content.
+        buffer.replace_content("scribe");
+
+        // Verify that the position is retained.
+        assert_eq!(*buffer.cursor, Position { line: 0, offset: 3 });
+    }
+
+    #[test]
+    fn replace_content_retains_position_line_when_possible() {
+        let mut buffer = Buffer::new();
+
+        // Move to a position whose line (but not offset)
+        // is available in the replaced content.
+        buffer.insert("amp\neditor");
+        buffer.cursor.move_to(Position { line: 1, offset: 1 });
+
+        // Replace the buffer content.
+        buffer.replace_content("scribe\n");
+
+        // Verify that the position is set to the start of the same line.
+        assert_eq!(*buffer.cursor, Position { line: 1, offset: 0 });
+    }
+
+    #[test]
+    fn replace_content_discards_position_when_impossible() {
+        let mut buffer = Buffer::new();
+
+        // Move to a position entirely unavailable in the replaced content.
+        buffer.insert("\namp\neditor");
+        buffer.cursor.move_to(Position { line: 2, offset: 1 });
+
+        // Replace the buffer content.
+        buffer.replace_content("scribe\n");
+
+        // Verify that the position is discarded.
+        assert_eq!(*buffer.cursor, Position::new());
+    }
+
+    #[test]
+    fn replace_content_calls_change_callback_with_zero_position() {
+        let mut buffer = Buffer::new();
+        buffer.insert("amp\neditor");
+
+        // Create a non-zero position that we'll share with the callback.
+        let tracked_position = Rc::new(RefCell::new(Position { line: 1, offset: 1 }));
+        let callback_position = tracked_position.clone();
+
+        // Set up the callback so that it updates the shared position.
+        buffer.change_callback = Some(Box::new(move |change_position| {
+            *callback_position.borrow_mut() = change_position
+        }));
+
+        // Replace the buffer content.
+        buffer.replace_content("scribe");
 
         // Verify that the callback received the correct position.
         assert_eq!(*tracked_position.borrow(), Position::new());
