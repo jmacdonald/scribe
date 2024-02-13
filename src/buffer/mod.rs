@@ -29,7 +29,7 @@ use std::cell::RefCell;
 use std::default::Default;
 use std::fs::{self, File};
 use std::io;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::ops::Fn;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -114,11 +114,9 @@ impl Buffer {
     /// ```
     pub fn from_file(path: &Path) -> io::Result<Buffer> {
         // Try to open and read the file, returning any errors encountered.
-        let mut file = File::open(path)?;
-        let mut data = String::new();
-        file.read_to_string(&mut data)?;
+        let content = fs::read_to_string(path)?;
 
-        let data = Rc::new(RefCell::new(GapBuffer::new(data)));
+        let data = Rc::new(RefCell::new(GapBuffer::new(content)));
         let cursor = Cursor::new(data.clone(), Position { line: 0, offset: 0 });
 
         // Create a new buffer using the loaded data, path, and other defaults.
