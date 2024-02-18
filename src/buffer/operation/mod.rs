@@ -5,6 +5,7 @@ mod delete;
 pub mod group;
 pub mod history;
 mod insert;
+mod replace;
 
 /// A reversible buffer operation.
 ///
