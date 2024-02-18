@@ -44,11 +44,21 @@ impl Replace {
 }
 
 impl Buffer {
-    /// Replaces the buffer's content with the provided data. This method will
+    /// Replaces the buffer's contents with the provided data. This method will
     /// make best efforts to retain the full cursor position, then cursor line,
     /// and will ultimately fall back to resetting the cursor to its initial
     /// (0,0) position if these fail. The buffer's ID, syntax definition, and
-    /// change_callback are always persisted.
+    /// change callback are always persisted.
+    ///
+    /// <div class="warning">
+    ///   As this is a reversible operation, both the before and after buffer
+    ///   contents are kept in-memory, which for large buffers may be relatively
+    ///   expensive. To help avoid needless replacements, this method will
+    ///   ignore requests that don't actually change content. Despite this, use
+    ///   this operation judiciously; it is designed for wholesale replacements
+    ///   (e.g. external formatting tools) that cannot be broken down into
+    ///   selective delete/insert operations.
+    /// </div>
     ///
     /// # Examples
     ///
@@ -63,7 +73,14 @@ impl Buffer {
     /// assert_eq!(buffer.data(), "new\ncontent");
     /// assert_eq!(*buffer.cursor, Position{ line: 1, offset: 1 });
     /// ```
-    pub fn replace<T: Into<String>>(&mut self, content: T) {
+    pub fn replace<T: Into<String> + AsRef<str>>(&mut self, content: T) {
+        let old_content = self.data();
+
+        // Ignore replacements that don't change content.
+        if content.as_ref() == old_content {
+            return;
+        }
+
         // Build and run an insert operation.
         let mut op = Replace::new(self.data(), content.into());
         op.run(self);
@@ -197,5 +214,17 @@ mod tests {
 
         // Verify that the original content is restored.
         assert_eq!(buffer.data(), "it works!\n");
+    }
+
+    #[test]
+    fn replace_does_nothing_if_replacement_matches_buffer_contents() {
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+
+        // Try to replace buffer content with matching content.
+        buffer.replace("it works!\n");
+
+        assert!(!buffer.modified());
+        assert!(buffer.history.previous().is_none());
     }
 }
