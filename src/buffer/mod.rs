@@ -417,6 +417,10 @@ impl Buffer {
 
         self.replace(content);
 
+        // We mark the history at points where the
+        // buffer is in sync with its file equivalent.
+        self.history.mark();
+
         Ok(())
     }
 
@@ -552,6 +556,28 @@ mod tests {
 
         // Verify that the callback received the correct position.
         assert_eq!(*tracked_position.borrow(), Position::new());
+    }
+
+    #[test]
+    fn reload_marks_buffer_as_unmodified() {
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+        buffer.insert("amp\neditor");
+
+        buffer.reload().unwrap();
+
+        assert!(!buffer.modified());
+    }
+
+    #[test]
+    fn reload_retains_history() {
+        let file_path = Path::new("tests/sample/file");
+        let mut buffer = Buffer::from_file(file_path).unwrap();
+        buffer.insert("amp\neditor");
+
+        buffer.reload().unwrap();
+
+        assert!(buffer.history.previous().is_some());
     }
 
     #[test]
