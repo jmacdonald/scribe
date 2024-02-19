@@ -1,3 +1,9 @@
+### 0.8.4
+
+* Rename `Buffer::replace_content` method to just `replace`
+* Re-implement `replace` as a proper operation, allowing it to be undone/redone
+* Fix an issue from `0.8.3` where `Buffer::reload` would leave buffer flagged as modified
+
 ### 0.8.3
 
 * Add new `Buffer::replace_content` method to replace all content in-place
