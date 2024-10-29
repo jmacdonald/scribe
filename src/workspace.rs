@@ -153,6 +153,40 @@ impl Workspace {
         })
     }
 
+    /// Returns the current buffer's index, relative to all open buffers. Can be
+    /// used alongside the `buffer_paths` method to know which path corresponds
+    /// to the current buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use scribe::Workspace;
+    /// use std::path::Path;
+    ///
+    /// // Set up the paths we'll use.
+    /// let directory_path = Path::new("tests/sample");
+    /// let file_path = Path::new("tests/sample/file");
+    ///
+    /// // Create a workspace.
+    /// let mut workspace = Workspace::new(
+    ///     Path::new("tests/sample"),
+    ///     None
+    /// ).unwrap();
+    ///
+    /// // Add buffers to the workspace.
+    /// for path in ["tests/sample/file", "tests/sample/file2"] {
+    ///     let buf = Buffer::from_file(Path::new(path)).unwrap();
+    ///     workspace.add_buffer(buf);
+    /// }
+    ///
+    /// // Second buffer is selected as it was most recently added.
+    /// assert_eq!(workspace.current_buffer_index(), Some(1));
+    /// ```
+    pub fn current_buffer_index(&self) -> Option<usize> {
+        self.current_buffer_index
+    }
+
     /// Removes the currently selected buffer from the collection.
     /// If the workspace is empty, this method does nothing.
     ///
@@ -305,6 +339,51 @@ impl Workspace {
             .ok_or(ErrorKind::MissingSyntax)?;
 
         Ok(TokenSet::new(data, syntax_definition, &self.syntax_set))
+    }
+
+    /// Returns path references to all buffers in the workspace.
+    ///
+    /// If a buffer's path can be represented relative to the workspace path,
+    /// a relative path will be returned. Otherwise, it will be returned as-is.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Buffer;
+    /// use scribe::Workspace;
+    /// use std::path::Path;
+    ///
+    /// // Create a workspace.
+    /// let mut workspace = Workspace::new(
+    ///     Path::new("tests/sample"),
+    ///     None
+    /// ).unwrap();
+    ///
+    /// // Add buffers to the workspace.
+    /// for path in ["tests/sample/file", "tests/sample/file2"] {
+    ///     let buf = Buffer::from_file(Path::new(path)).unwrap();
+    ///     workspace.add_buffer(buf);
+    /// }
+    ///
+    /// assert_eq!(workspace.buffer_paths(), [
+    ///     Some(Path::new("file")),
+    ///     Some(Path::new("file2"))
+    /// ]);
+    /// ```
+    pub fn buffer_paths(&mut self) -> Vec<Option<&Path>> {
+        self.buffers
+            .iter()
+            .enumerate()
+            .map(|(i, buf)| {
+                if self.current_buffer_index == Some(i) {
+                    self.current_buffer_path()
+                } else {
+                    buf.path
+                        .as_deref()
+                        .and_then(|path| path.strip_prefix(&self.path).ok().or(Some(path)))
+                }
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Updates the current buffer's syntax definition.
