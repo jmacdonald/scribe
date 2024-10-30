@@ -1,3 +1,11 @@
+### 0.8.5
+
+* Add new `Workspace::buffer_paths` method to list all buffer paths in the
+  workspace.
+* Add new `Workspace::current_buffer_index` method, which when combined with the
+  `buffer_paths` method above, can be used to highlight the current buffer
+  filename and/or path.
+
 ### 0.8.4
 
 * Rename `Buffer::replace_content` method to just `replace`
