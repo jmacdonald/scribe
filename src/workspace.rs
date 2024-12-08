@@ -435,6 +435,7 @@ impl Workspace {
             .ok_or(ErrorKind::EmptyWorkspace)?;
         let definition = buffer
             .file_extension()
+            .or_else(|| buffer.file_name())
             .and_then(|ex| self.syntax_set.find_syntax_by_extension(&ex))
             .or_else(|| Some(self.syntax_set.find_syntax_plain_text()))
             .cloned();
@@ -493,7 +494,7 @@ mod tests {
     use super::Workspace;
     use crate::buffer::Buffer;
     use std::env;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn add_buffer_adds_and_selects_the_passed_buffer() {
@@ -820,6 +821,48 @@ mod tests {
         assert_eq!(
             workspace.current_buffer.as_ref().unwrap().data(),
             "third buffer"
+        );
+    }
+
+    #[test]
+    fn update_current_syntax_handles_files_without_extensions() {
+        // Create a workspace.
+        let workspace_path = Path::new("tests/sample");
+        let mut workspace = Workspace::new(workspace_path, None).unwrap();
+
+        // Add a buffer without path to the workspace.
+        let buf = Buffer::new();
+        workspace.add_buffer(buf);
+
+        // Ensure a default syntax definition is applied.
+        assert_eq!(
+            workspace
+                .current_buffer
+                .as_ref()
+                .unwrap()
+                .syntax_definition
+                .as_ref()
+                .unwrap()
+                .name,
+            "Plain Text"
+        );
+
+        // Add a path without extension and update the syntax definition.
+        let buffer_path = PathBuf::from("Makefile");
+        workspace.current_buffer.as_mut().unwrap().path = Some(buffer_path);
+        workspace.update_current_syntax().unwrap();
+
+        // Ensure a non-default syntax definition is applied.
+        assert_eq!(
+            workspace
+                .current_buffer
+                .as_ref()
+                .unwrap()
+                .syntax_definition
+                .as_ref()
+                .unwrap()
+                .name,
+            "Makefile"
         );
     }
 }
