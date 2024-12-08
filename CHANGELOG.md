@@ -1,3 +1,11 @@
+### 0.8.6
+
+* Updated `Workspace::update_current_syntax` method to match against buffer file
+  names when an extension isn't present, enabling support for formats like
+  `Makefile`. Since this method is called by `Workspace::open_buffer` and
+  `Workspace::add_buffer`, these methods will now correctly apply syntax
+  definitions when available.
+
 ### 0.8.5
 
 * Add new `Workspace::buffer_paths` method to list all buffer paths in the
