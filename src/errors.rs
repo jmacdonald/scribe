@@ -8,8 +8,6 @@ pub enum Error {
     EmptyWorkspace,
     #[error("buffer doesn't have a path")]
     MissingPath,
-    #[error("couldn't find any scopes at the cursor position")]
-    MissingScope,
     #[error("no syntax definition for the current buffer")]
     MissingSyntax,
     #[cfg(unix)]
