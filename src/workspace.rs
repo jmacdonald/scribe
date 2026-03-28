@@ -484,6 +484,7 @@ impl Workspace {
 mod tests {
     use super::Workspace;
     use crate::buffer::Buffer;
+    use crate::Error;
     use std::env;
     use std::path::{Path, PathBuf};
 
@@ -624,6 +625,31 @@ mod tests {
             workspace.current_buffer.as_ref().unwrap().data(),
             "it works!\n"
         );
+    }
+
+    #[test]
+    fn current_buffer_tokens_returns_empty_workspace_error() {
+        let workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+
+        match workspace.current_buffer_tokens() {
+            Err(Error::EmptyWorkspace) => {}
+            Err(other) => panic!("expected EmptyWorkspace, got {other}"),
+            Ok(_) => panic!("expected EmptyWorkspace error"),
+        }
+    }
+
+    #[test]
+    fn current_buffer_tokens_returns_missing_syntax_error() {
+        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let buffer = Buffer::new();
+        workspace.add_buffer(buffer);
+        workspace.current_buffer.as_mut().unwrap().syntax_definition = None;
+
+        match workspace.current_buffer_tokens() {
+            Err(Error::MissingSyntax) => {}
+            Err(other) => panic!("expected MissingSyntax, got {other}"),
+            Ok(_) => panic!("expected MissingSyntax error"),
+        }
     }
 
     #[test]

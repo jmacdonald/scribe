@@ -460,10 +460,20 @@ impl Buffer {
 mod tests {
     extern crate syntect;
     use crate::buffer::{Buffer, Position};
+    use crate::Error;
     use std::cell::RefCell;
     use std::path::Path;
     use std::rc::Rc;
     use syntect::parsing::SyntaxSet;
+
+    #[test]
+    fn reload_returns_missing_path_error_when_path_is_unset() {
+        let mut buffer = Buffer::new();
+
+        let error = buffer.reload().unwrap_err();
+
+        assert!(matches!(error, Error::MissingPath));
+    }
 
     #[test]
     fn reload_persists_id_and_syntax_definition() {
