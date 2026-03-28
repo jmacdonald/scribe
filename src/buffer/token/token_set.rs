@@ -17,7 +17,7 @@ impl<'a> TokenSet<'a> {
         }
     }
 
-    pub fn iter(&self) -> Result<TokenIterator> {
+    pub fn iter(&self) -> Result<TokenIterator<'_>> {
         TokenIterator::new(&self.data, self.syntax_definition, self.syntaxes)
     }
 }
