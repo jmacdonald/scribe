@@ -412,7 +412,7 @@ impl Buffer {
     /// ```
     pub fn reload(&mut self) -> Result<()> {
         // Load content from disk.
-        let path = self.path.as_ref().ok_or(ErrorKind::MissingPath)?;
+        let path = self.path.as_ref().ok_or(Error::MissingPath)?;
         let content = fs::read_to_string(path)?;
 
         self.replace(content);

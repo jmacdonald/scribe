@@ -16,4 +16,4 @@ keywords = ["gap", "buffer", "text", "editor", "document"]
 [dependencies]
 syntect = { version = "5.1", default-features = false, features = ["default-fancy"] }
 unicode-segmentation = "1.10"
-error-chain = "0.12"
+thiserror = "1.0"

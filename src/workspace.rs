@@ -328,15 +328,9 @@ impl Workspace {
     /// );
     /// ```
     pub fn current_buffer_tokens(&self) -> Result<TokenSet<'_>> {
-        let buf = self
-            .current_buffer
-            .as_ref()
-            .ok_or(ErrorKind::EmptyWorkspace)?;
+        let buf = self.current_buffer.as_ref().ok_or(Error::EmptyWorkspace)?;
         let data = buf.data();
-        let syntax_definition = buf
-            .syntax_definition
-            .as_ref()
-            .ok_or(ErrorKind::MissingSyntax)?;
+        let syntax_definition = buf.syntax_definition.as_ref().ok_or(Error::MissingSyntax)?;
 
         Ok(TokenSet::new(data, syntax_definition, &self.syntax_set))
     }
@@ -429,10 +423,7 @@ impl Workspace {
     ///
     /// ```
     pub fn update_current_syntax(&mut self) -> Result<()> {
-        let buffer = self
-            .current_buffer
-            .as_mut()
-            .ok_or(ErrorKind::EmptyWorkspace)?;
+        let buffer = self.current_buffer.as_mut().ok_or(Error::EmptyWorkspace)?;
         let definition = buffer
             .file_extension()
             .or_else(|| buffer.file_name())

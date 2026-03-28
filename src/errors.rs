@@ -1,27 +1,24 @@
-error_chain! {
-    errors {
-        EmptyWorkspace {
-            description("the workspace is empty")
-            display("the workspace is empty")
-        }
-        MissingPath {
-            description("buffer doesn't have a path")
-            display("buffer doesn't have a path")
-        }
-        MissingScope {
-            description("couldn't find any scopes at the cursor position")
-            display("couldn't find any scopes at the cursor position")
-        }
-        MissingSyntax {
-            description("no syntax definition for the current buffer")
-            display("no syntax definition for the current buffer")
-        }
-    }
+use thiserror::Error as ThisError;
 
-    foreign_links {
-        Io(::std::io::Error) #[cfg(unix)];
-        ParsingError(syntect::parsing::ParsingError);
-        ScopeError(syntect::parsing::ScopeError);
-        SyntaxLoadingError(syntect::LoadingError);
-    }
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, ThisError)]
+pub enum Error {
+    #[error("the workspace is empty")]
+    EmptyWorkspace,
+    #[error("buffer doesn't have a path")]
+    MissingPath,
+    #[error("couldn't find any scopes at the cursor position")]
+    MissingScope,
+    #[error("no syntax definition for the current buffer")]
+    MissingSyntax,
+    #[cfg(unix)]
+    #[error(transparent)]
+    Io(#[from] ::std::io::Error),
+    #[error(transparent)]
+    ParsingError(#[from] syntect::parsing::ParsingError),
+    #[error(transparent)]
+    ScopeError(#[from] syntect::parsing::ScopeError),
+    #[error(transparent)]
+    SyntaxLoadingError(#[from] syntect::LoadingError),
 }
