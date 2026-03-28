@@ -1,3 +1,10 @@
+### 0.9.0
+
+* Replace deprecated `error-chain` dependency with `thiserror`
+* Replace generated `ErrorKind` API with an explicit `Error` enum, while
+  preserving typed error returns for library consumers
+* Remove unused `MissingScope` error variant
+
 ### 0.8.6
 
 * Updated `Workspace::update_current_syntax` method to match against buffer file
