@@ -1,0 +1,9 @@
+---
+name: App Rust
+file_extensions:
+  - rs
+scope: source.rust.app
+contexts:
+  main:
+    - match: \w+
+      scope: keyword.control.rust

@@ -1,0 +1,9 @@
+---
+name: Amp
+file_extensions:
+  - amp
+scope: source.amp
+contexts:
+  main:
+    - match: \w+
+      scope: text.plain

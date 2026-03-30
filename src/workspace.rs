@@ -19,18 +19,30 @@ pub struct Workspace {
 
 impl Workspace {
     /// Creates a new empty workspace for the specified path.
-    pub fn new(path: &Path, syntax_definitions: Option<&Path>) -> Result<Workspace> {
-        let mut syntax_set = SyntaxSet::load_defaults_newlines();
+    pub fn new(path: &Path) -> Result<Workspace> {
+        Workspace::with_syntax_set(path, SyntaxSet::load_defaults_newlines())
+    }
 
-        if let Some(path) = syntax_definitions {
-            // Add user syntaxes to the set.
-            let mut builder = syntax_set.into_builder();
-            builder.add_from_folder(path, true)?;
-
-            // Build the augmented syntax set.
-            syntax_set = builder.build();
-        }
-
+    /// Creates a new empty workspace for the specified path using the provided
+    /// [`SyntaxSet`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scribe::Workspace;
+    /// use std::path::Path;
+    /// use syntect::parsing::SyntaxSetBuilder;
+    ///
+    /// let mut builder = SyntaxSetBuilder::new();
+    /// builder
+    ///     .add_from_folder("tests/syntaxes/amp", true)
+    ///     .unwrap();
+    /// let syntax_set = builder.build();
+    ///
+    /// let mut workspace = Workspace::with_syntax_set(Path::new("tests/sample"), syntax_set)
+    ///     .unwrap();
+    /// ```
+    pub fn with_syntax_set(path: &Path, syntax_set: SyntaxSet) -> Result<Workspace> {
         Ok(Workspace {
             path: path.canonicalize()?,
             buffers: Vec::new(),
@@ -57,7 +69,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -103,7 +115,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Open a buffer in the workspace.
     /// workspace.open_buffer(file_path.clone());
@@ -137,7 +149,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -169,10 +181,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(
-    ///     Path::new("tests/sample"),
-    ///     None
-    /// ).unwrap();
+    /// let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
     ///
     /// // Add buffers to the workspace.
     /// for path in ["tests/sample/file", "tests/sample/file2"] {
@@ -202,7 +211,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -241,7 +250,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -276,7 +285,7 @@ impl Workspace {
     /// let file_path = Path::new("tests/sample/file");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// // Add a buffer to the workspace.
     /// let buf = Buffer::from_file(file_path).unwrap();
@@ -314,7 +323,7 @@ impl Workspace {
     /// let directory_path = Path::new("tests/sample");
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(directory_path, None).unwrap();
+    /// let mut workspace = Workspace::new(directory_path).unwrap();
     ///
     /// assert!(workspace.current_buffer_tokens().is_err());
     ///
@@ -348,10 +357,7 @@ impl Workspace {
     /// use std::path::Path;
     ///
     /// // Create a workspace.
-    /// let mut workspace = Workspace::new(
-    ///     Path::new("tests/sample"),
-    ///     None
-    /// ).unwrap();
+    /// let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
     ///
     /// // Add buffers to the workspace.
     /// for path in ["tests/sample/file", "tests/sample/file2"] {
@@ -400,7 +406,7 @@ impl Workspace {
     ///
     /// // Create a workspace.
     /// let workspace_path = Path::new("tests/sample");
-    /// let mut workspace = Workspace::new(workspace_path, None).unwrap();
+    /// let mut workspace = Workspace::new(workspace_path).unwrap();
     ///
     /// // Add a buffer without a path to the workspace.
     /// let buf = Buffer::new();
@@ -423,16 +429,23 @@ impl Workspace {
     ///
     /// ```
     pub fn update_current_syntax(&mut self) -> Result<()> {
+        let definition = {
+            let buffer = self.current_buffer.as_ref().ok_or(Error::EmptyWorkspace)?;
+            self.resolve_syntax(buffer)
+        };
         let buffer = self.current_buffer.as_mut().ok_or(Error::EmptyWorkspace)?;
-        let definition = buffer
-            .file_extension()
-            .or_else(|| buffer.file_name())
-            .and_then(|ex| self.syntax_set.find_syntax_by_extension(&ex))
-            .or_else(|| Some(self.syntax_set.find_syntax_plain_text()))
-            .cloned();
         buffer.syntax_definition = definition;
 
         Ok(())
+    }
+
+    fn resolve_syntax(&self, buffer: &Buffer) -> Option<syntect::parsing::SyntaxReference> {
+        buffer
+            .file_extension()
+            .or_else(|| buffer.file_name())
+            .and_then(|name| self.syntax_set.find_syntax_by_extension(&name))
+            .or_else(|| Some(self.syntax_set.find_syntax_plain_text()))
+            .cloned()
     }
 
     fn select_buffer(&mut self, index: usize) -> bool {
@@ -487,10 +500,11 @@ mod tests {
     use crate::Error;
     use std::env;
     use std::path::{Path, PathBuf};
+    use syntect::parsing::{SyntaxSet, SyntaxSetBuilder};
 
     #[test]
     fn add_buffer_adds_and_selects_the_passed_buffer() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf = Buffer::from_file(Path::new("tests/sample/file")).unwrap();
         workspace.add_buffer(buf);
 
@@ -500,7 +514,7 @@ mod tests {
 
     #[test]
     fn add_buffer_inserts_the_new_buffer_after_the_current_buffer() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let mut buf1 = Buffer::new();
         let mut buf2 = Buffer::new();
         let mut buf3 = Buffer::new();
@@ -523,7 +537,7 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_with_unique_id_values() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf1 = Buffer::new();
         let buf2 = Buffer::new();
         let buf3 = Buffer::new();
@@ -540,7 +554,7 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_without_paths_using_plain_text_syntax() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf = Buffer::new();
         workspace.add_buffer(buf);
 
@@ -559,7 +573,7 @@ mod tests {
 
     #[test]
     fn add_buffer_populates_buffers_with_unknown_extensions_using_plain_text_syntax() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf = Buffer::from_file(Path::new("tests/sample/file"));
         workspace.add_buffer(buf.unwrap());
 
@@ -578,7 +592,7 @@ mod tests {
 
     #[test]
     fn open_buffer_adds_and_selects_the_buffer_at_the_specified_path() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace
             .open_buffer(Path::new("tests/sample/file"))
             .unwrap();
@@ -589,7 +603,7 @@ mod tests {
 
     #[test]
     fn open_buffer_does_not_open_a_buffer_already_in_the_workspace() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace
             .open_buffer(Path::new("tests/sample/file"))
             .unwrap();
@@ -602,7 +616,7 @@ mod tests {
 
     #[test]
     fn open_buffer_selects_buffer_if_it_already_exists_in_workspace() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace
             .open_buffer(Path::new("tests/sample/file"))
             .unwrap();
@@ -629,7 +643,7 @@ mod tests {
 
     #[test]
     fn current_buffer_tokens_returns_empty_workspace_error() {
-        let workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         match workspace.current_buffer_tokens() {
             Err(Error::EmptyWorkspace) => {}
@@ -640,7 +654,7 @@ mod tests {
 
     #[test]
     fn current_buffer_tokens_returns_missing_syntax_error() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buffer = Buffer::new();
         workspace.add_buffer(buffer);
         workspace.current_buffer.as_mut().unwrap().syntax_definition = None;
@@ -654,13 +668,13 @@ mod tests {
 
     #[test]
     fn current_buffer_returns_none_when_there_are_no_buffers() {
-        let workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         assert!(workspace.current_buffer.is_none());
     }
 
     #[test]
     fn current_buffer_returns_one_when_there_are_buffers() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let buf = Buffer::from_file(Path::new("tests/sample/file")).unwrap();
         workspace.add_buffer(buf);
         assert!(workspace.current_buffer.is_some());
@@ -668,7 +682,7 @@ mod tests {
 
     #[test]
     fn current_buffer_path_works_with_absolute_paths() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         let mut buf = Buffer::new();
         let absolute_path = env::current_dir().unwrap();
         buf.path = Some(absolute_path.clone());
@@ -681,14 +695,14 @@ mod tests {
 
     #[test]
     fn close_current_buffer_does_nothing_when_none_are_open() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.close_current_buffer();
         assert!(workspace.current_buffer.is_none());
     }
 
     #[test]
     fn close_current_buffer_cleans_up_when_only_one_buffer_is_open() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.add_buffer(Buffer::new());
         workspace.close_current_buffer();
         assert!(workspace.current_buffer.is_none());
@@ -697,7 +711,7 @@ mod tests {
 
     #[test]
     fn close_current_buffer_selects_the_previous_buffer() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -720,7 +734,7 @@ mod tests {
 
     #[test]
     fn close_current_buffer_selects_the_next_buffer_when_current_is_at_start() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -743,14 +757,14 @@ mod tests {
 
     #[test]
     fn previous_buffer_does_nothing_when_no_buffers_are_open() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.previous_buffer();
         assert!(workspace.current_buffer.is_none());
     }
 
     #[test]
     fn previous_buffer_when_three_are_open_selects_previous_wrapping_to_last() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -793,14 +807,14 @@ mod tests {
 
     #[test]
     fn next_buffer_does_nothing_when_no_buffers_are_open() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
         workspace.next_buffer();
         assert!(workspace.current_buffer.is_none());
     }
 
     #[test]
     fn next_buffer_when_three_are_open_selects_next_wrapping_to_first() {
-        let mut workspace = Workspace::new(Path::new("tests/sample"), None).unwrap();
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
 
         // Create two buffers and add them to the workspace.
         let mut first_buffer = Buffer::new();
@@ -845,7 +859,7 @@ mod tests {
     fn update_current_syntax_handles_files_without_extensions() {
         // Create a workspace.
         let workspace_path = Path::new("tests/sample");
-        let mut workspace = Workspace::new(workspace_path, None).unwrap();
+        let mut workspace = Workspace::new(workspace_path).unwrap();
 
         // Add a buffer without path to the workspace.
         let buf = Buffer::new();
@@ -882,4 +896,75 @@ mod tests {
             "Makefile"
         );
     }
+
+    #[test]
+    fn workspace_new_loads_default_syntaxes() {
+        let mut workspace = Workspace::new(Path::new("tests/sample")).unwrap();
+        let mut buffer = Buffer::new();
+        buffer.path = Some(PathBuf::from("mod.rs"));
+        workspace.add_buffer(buffer);
+
+        assert_eq!(
+            workspace
+                .current_buffer
+                .as_ref()
+                .unwrap()
+                .syntax_definition
+                .as_ref()
+                .unwrap()
+                .name,
+            "Rust"
+        );
+    }
+
+    #[test]
+    fn workspace_uses_the_provided_syntax_set() {
+        let mut builder = SyntaxSetBuilder::new();
+        builder.add_from_folder("tests/syntaxes/amp", true).unwrap();
+        let syntax_set = builder.build();
+        let mut workspace =
+            Workspace::with_syntax_set(Path::new("tests/sample"), syntax_set).unwrap();
+        let mut buffer = Buffer::new();
+        buffer.path = Some(PathBuf::from("file.amp"));
+        workspace.add_buffer(buffer);
+
+        assert_eq!(
+            workspace
+                .current_buffer
+                .as_ref()
+                .unwrap()
+                .syntax_definition
+                .as_ref()
+                .unwrap()
+                .name,
+            "Amp"
+        );
+    }
+
+    #[test]
+    fn workspace_uses_provided_syntaxes_instead_of_default_syntaxes() {
+        let mut builder = SyntaxSet::load_defaults_newlines().into_builder();
+        builder
+            .add_from_folder("tests/syntaxes/rust_override", true)
+            .unwrap();
+        let syntax_set = builder.build();
+        let mut workspace =
+            Workspace::with_syntax_set(Path::new("tests/sample"), syntax_set).unwrap();
+        let mut buffer = Buffer::new();
+        buffer.path = Some(PathBuf::from("mod.rs"));
+        workspace.add_buffer(buffer);
+
+        assert_eq!(
+            workspace
+                .current_buffer
+                .as_ref()
+                .unwrap()
+                .syntax_definition
+                .as_ref()
+                .unwrap()
+                .name,
+            "App Rust"
+        );
+    }
+
 }
