@@ -1,3 +1,20 @@
+### 0.10.0
+
+* Remove SyntaxSet build/load/merge concerns from Workspace type
+
+  With Amp wanting to provide out-of-the-box support for languages not included
+  in Syntect's default set, there are now three layers of language support:
+  Syntect built-in, Amp built-in, and user-provided. Rather than artificially
+  abstracting this into a complex `Workspace` constructor pattern, we'll let API
+  consumers handle that, if they need it at all.
+
+  To support this, a new `with_syntax_set` constructor method has been
+  introduced, which accepts a fully-built `SyntaxSet`. Additionally, the
+  default constructor no longer supports an optional path to a folder of syntax
+  definitions that are merged with the Syntect defaults. This is a breaking API
+  change; the expectation is that consumers now handle all non-default syntax
+  definition composition.
+
 ### 0.9.0
 
 * Replace deprecated `error-chain` dependency with `thiserror`
